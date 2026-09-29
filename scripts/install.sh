@@ -13,7 +13,7 @@
 # launcher that only uses that runtime. No Java has to be installed on the machine.
 #
 # Two modes:
-#   - Pass --version <tag> (e.g. "0.1.0-beta.5"), or --version latest, to download that release's
+#   - Pass --version <tag> (e.g. "0.1.0"), or --version latest, to download that release's
 #     bundle for this OS and CPU (linux-x64, linux-aarch64, macos-x64, macos-aarch64) and
 #     SHA256SUMS from GitHub over HTTPS, verify the checksum, and install only if it matches.
 #     Nothing is written to the install directory if verification fails. This is also the default

@@ -8,7 +8,7 @@
   <!-- The single source of the version: the next release, as -SNAPSHOT until it is tagged. The
        release workflow refuses a tag that doesn't match this (minus -SNAPSHOT), and the jar
        reports it as its Implementation-Version (shown by the version flag). -->
-  <version>0.1.0-beta.5-SNAPSHOT</version>
+  <version>0.1.0-SNAPSHOT</version>
 
   <name>Pinfit</name>
   <url>https://daoek.github.io/Pinfit/</url>
@@ -103,6 +103,11 @@
         <plugin>
           <artifactId>maven-surefire-plugin</artifactId>
           <version>3.3.0</version>
+          <configuration>
+            <!-- Last line of defence behind the per-test JUnit timeout (junit-platform.properties):
+                 a test JVM still running after 10 minutes is killed instead of hanging the build. -->
+            <forkedProcessTimeoutInSeconds>600</forkedProcessTimeoutInSeconds>
+          </configuration>
         </plugin>
         <plugin>
           <artifactId>maven-jar-plugin</artifactId>

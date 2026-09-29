@@ -11,7 +11,7 @@
     launcher that only uses that runtime. No Java has to be installed on the machine.
 
     Two modes:
-      - Pass -Version <tag> (e.g. "0.1.0-beta.5" - see the Releases page for what's published),
+      - Pass -Version <tag> (e.g. "0.1.0" - see the Releases page for what's published),
         or -Version latest, to download that release's Windows bundle and SHA256SUMS from GitHub
         over HTTPS, verify the checksum, and install only if it matches. Nothing is written to
         the install directory if verification fails. This is also the default whenever the

@@ -29,9 +29,9 @@ Linux / macOS:
 curl -fsSL https://raw.githubusercontent.com/daoek/Pinfit/main/scripts/install.sh | sh
 ```
 
-To pin a version instead, pass it on: `... | sh -s -- --version 0.1.0-beta.5` on Linux/macOS, or
+To pin a version instead, pass it on: `... | sh -s -- --version 0.1.0` on Linux/macOS, or
 download [`install.ps1`](https://github.com/daoek/Pinfit/raw/main/scripts/install.ps1) and run
-`.\install.ps1 -Version 0.1.0-beta.5` on Windows.
+`.\install.ps1 -Version 0.1.0` on Windows.
 
 The installer downloads the [release](https://github.com/daoek/Pinfit/releases) for your platform
 (Windows x64, Linux x64/arm64, macOS Intel/Apple silicon), verifies it against the published SHA-256

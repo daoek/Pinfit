@@ -30,6 +30,11 @@ public final class SwitchTagProcessor {
     private SwitchTagProcessor() {
     }
 
+    /** Whether {@code line} is an {@code @PinfitSwitch} tag line - removed by detach with the other markers. */
+    public static boolean isTagLine(String line) {
+        return TAG.matcher(line).matches();
+    }
+
     public static boolean isUsed(String content) {
         return content.contains("@PinfitSwitch") || content.contains("@CGenSwitch");
     }

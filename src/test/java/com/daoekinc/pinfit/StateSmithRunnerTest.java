@@ -10,6 +10,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Locale;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.api.io.TempDir;
 
 /**
@@ -25,7 +26,7 @@ class StateSmithRunnerTest {
     @TempDir
     Path temporaryDirectory;
 
-    private enum Behavior { OK, FAIL, NO_FILES, UNREADABLE }
+    private enum Behavior { OK, FAIL, NO_FILES, UNREADABLE, PROMPT }
 
     /** Writes a fake ss.cli that reports version 1.2.3 and then behaves as {@code behavior} on "run". */
     private Path fakeStateSmith(Behavior behavior) throws Exception {
@@ -37,6 +38,8 @@ class StateSmithRunnerTest {
                     ? "echo " + MARKER + "> \"%~n2.h\"\r\necho " + MARKER + "> \"%~n2.c\"\r\necho Finished normally.\r\n"
                     : "base=$(basename \"$2\" .plantuml)\necho '" + MARKER + "' > \"$base.h\"\necho '" + MARKER + "' > \"$base.c\"\necho Finished normally.\n";
             case FAIL -> "echo boom\n";
+            // Waits for an answer on stdin - on an open pipe nobody writes to, that is forever.
+            case PROMPT -> WINDOWS ? "set /p answer=Continue?\necho boom\n" : "read answer\necho boom\n";
             case NO_FILES -> "echo Finished normally.\n";
             case UNREADABLE -> WINDOWS
                     ? "echo " + MARKER + "> \"%~n2.h\"\r\ncopy /y \"" + unreadable + "\" \"%~n2.c\" >nul\r\necho Finished normally.\r\n"
@@ -83,6 +86,14 @@ class StateSmithRunnerTest {
         CliFixture cli = projectUsing(fakeStateSmith(Behavior.FAIL).toString(), "1.2.3");
         assertEquals(1, cli.run("generate"));
         assertTrue(cli.errors().contains("StateSmith failed generating from"), cli.errors());
+        assertTrue(cli.errors().contains("boom"), cli.errors());
+    }
+
+    @Test
+    @Timeout(value = 60, threadMode = Timeout.ThreadMode.SEPARATE_THREAD)
+    void toolWaitingForInputGetsEndOfFileInsteadOfHanging() throws Exception {
+        CliFixture cli = projectUsing(fakeStateSmith(Behavior.PROMPT).toString(), "1.2.3");
+        assertEquals(1, cli.run("generate"));
         assertTrue(cli.errors().contains("boom"), cli.errors());
     }
 

@@ -27,7 +27,7 @@ and 'pinfit --version' for the installed version.
 `pinfit`, `pinfit help` and `pinfit --help`/`-h` all print the command list above, with no flag detail.
 For a given command, either `pinfit <command> --help`/`-h` or `pinfit help <command>` prints that
 command's full usage and flags — the sections below. `pinfit --version` (or `-V`) prints the
-installed version, e.g. `Pinfit 0.1.0-beta.5`. Errors print a red `Pinfit error` block, usually
+installed version, e.g. `Pinfit 0.1.0`. Errors print a red `Pinfit error` block, usually
 followed by a cyan hint explaining how to fix the spec.
 
 The same reference is also shipped as a Unix `man` page, [`man/man1/pinfit.1`](https://github.com/daoek/Pinfit/blob/main/man/man1/pinfit.1)

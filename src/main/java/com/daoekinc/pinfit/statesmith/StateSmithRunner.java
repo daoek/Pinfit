@@ -2,11 +2,15 @@ package com.daoekinc.pinfit.statesmith;
 
 import com.daoekinc.pinfit.PinfitException;
 import com.daoekinc.pinfit.model.ProjectConfig;
+import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Invokes StateSmith's {@code ss.cli} as an external process. Pinfit never bundles or downloads it.
@@ -18,6 +22,8 @@ import java.util.List;
  */
 public final class StateSmithRunner {
     private static final String SUCCESS_MARKER = "Finished normally.";
+    /** A normal run takes seconds; anything this long is a tool stuck on something, not working. */
+    private static final long TIMEOUT_SECONDS = 180;
 
     /**
      * Runs {@code <command> --version} and checks the configured {@code stateSmith.version} is a
@@ -72,7 +78,7 @@ public final class StateSmithRunner {
         // name even when its directory is on PATH. Java's ProcessBuilder inherits that behavior,
         // so a plain `command: ss.cli` in pinfit.yaml (the documented default) would otherwise
         // never resolve. Retry once with .exe appended before giving up.
-        if (result == null && !command.toLowerCase(java.util.Locale.ROOT).endsWith(".exe")) {
+        if (result == null && !command.toLowerCase(Locale.ROOT).endsWith(".exe")) {
             result = start(command + ".exe", arguments, workingDirectory);
         }
         return result;
@@ -82,21 +88,54 @@ public final class StateSmithRunner {
         List<String> commandLine = new ArrayList<>();
         commandLine.add(command);
         commandLine.addAll(arguments);
-        ProcessBuilder builder = new ProcessBuilder(commandLine).redirectErrorStream(true);
+        Path outputFile;
+        try {
+            outputFile = Files.createTempFile("pinfit-statesmith-", ".log");
+        } catch (IOException exception) {
+            throw new PinfitException("Cannot create a temporary file for StateSmith's output: " + exception.getMessage(), exception);
+        }
+        // stdin from the null device: a tool that unexpectedly prompts gets end-of-file instead of
+        // waiting forever on a pipe nobody writes to. Output goes to a file rather than a pipe so the
+        // time limit below can be enforced while the tool runs.
+        ProcessBuilder builder = new ProcessBuilder(commandLine)
+                .redirectInput(ProcessBuilder.Redirect.from(nullDevice()))
+                .redirectErrorStream(true)
+                .redirectOutput(outputFile.toFile());
         if (workingDirectory != null) {
             builder.directory(workingDirectory.toFile());
         }
         try {
-            Process process = builder.start();
-            String output = new String(process.getInputStream().readAllBytes(), StandardCharsets.UTF_8);
-            process.waitFor();
-            return new ProcessResult(output);
+            Process process;
+            try {
+                process = builder.start();
+            } catch (IOException exception) {
+                return null;
+            }
+            if (!process.waitFor(TIMEOUT_SECONDS, TimeUnit.SECONDS)) {
+                process.destroyForcibly();
+                throw new PinfitException("'" + String.join(" ", commandLine) + "' did not finish within "
+                        + TIMEOUT_SECONDS + " seconds and was stopped.",
+                        "Fix it by", "running that command yourself in " + (workingDirectory == null ? "this directory" : workingDirectory)
+                                + " to see what it is waiting for, then generate again.");
+            }
+            // Lenient decode: console tools do not always emit valid UTF-8.
+            return new ProcessResult(new String(Files.readAllBytes(outputFile), StandardCharsets.UTF_8));
         } catch (IOException exception) {
-            return null;
+            throw new PinfitException("Cannot read StateSmith's output: " + exception.getMessage(), exception);
         } catch (InterruptedException exception) {
             Thread.currentThread().interrupt();
             throw new PinfitException("Interrupted while running '" + command + "'", exception);
+        } finally {
+            try {
+                Files.deleteIfExists(outputFile);
+            } catch (IOException ignored) {
+                // A leftover temp log is harmless.
+            }
         }
+    }
+
+    private static File nullDevice() {
+        return new File(System.getProperty("os.name").toLowerCase(Locale.ROOT).startsWith("windows") ? "NUL" : "/dev/null");
     }
 
     private record ProcessResult(String output) {

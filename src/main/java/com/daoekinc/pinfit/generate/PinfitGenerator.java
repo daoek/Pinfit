@@ -664,7 +664,8 @@ public final class PinfitGenerator {
             throw new PinfitException("New module name must be a valid C identifier, got '" + newName + "'");
         }
         Path specPath = resolveModuleSpecPath(project, oldIdentifier);
-        ModuleSpec module = ModuleSpec.from(specPath, yamlFiles.load(specPath));
+        Map<String, Object> specYaml = yamlFiles.load(specPath);
+        ModuleSpec module = ModuleSpec.from(specPath, specYaml);
         String oldName = module.name();
         if (oldName.equals(newName)) {
             throw new PinfitException("Module '" + oldName + "' is already named '" + newName + "'");
@@ -688,10 +689,12 @@ public final class PinfitGenerator {
 
         String content = readText(specPath);
         content = replaceScalarField(content, "name", oldName, newName);
-        if (!newHeader.equals(module.header())) {
+        // A header:/source: left out of the spec defaults to <name>.h/.c and so follows the new
+        // name by itself; only an explicitly written one needs rewriting.
+        if (!newHeader.equals(module.header()) && specYaml.containsKey("header")) {
             content = replaceScalarField(content, "header", module.header(), newHeader);
         }
-        if (!newSource.equals(module.sourceFile())) {
+        if (!newSource.equals(module.sourceFile()) && specYaml.containsKey("source")) {
             content = replaceScalarField(content, "source", module.sourceFile(), newSource);
         }
 

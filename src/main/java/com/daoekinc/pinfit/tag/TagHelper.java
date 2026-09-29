@@ -163,7 +163,7 @@ public final class TagHelper {
             List<String> kept = new ArrayList<>();
             boolean changed = false;
             for (String line : content.split("\\R", -1)) {
-                if (PinfitTag.isMarker(line)) {
+                if (PinfitTag.isMarker(line) || SwitchTagProcessor.isTagLine(line)) {
                     changed = true;
                 } else {
                     kept.add(line);

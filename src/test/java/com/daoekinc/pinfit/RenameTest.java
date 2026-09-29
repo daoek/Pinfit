@@ -46,6 +46,22 @@ class RenameTest {
     }
 
     @Test
+    void renamesModuleWhoseHeaderAndSourceAreDefaulted() throws Exception {
+        CliFixture cli = new CliFixture(temporaryDirectory);
+        assertEquals(0, cli.run("init"));
+        Path spec = temporaryDirectory.resolve("blinky.module.yaml");
+        Files.writeString(spec, "kind: module\nname: blinky\n");
+        assertEquals(0, cli.run("generate"));
+
+        assertEquals(0, cli.run("rename", "module", "blinky", "blinker"), cli.errors());
+        assertTrue(Files.exists(temporaryDirectory.resolve("blinker.h")));
+        assertTrue(Files.exists(temporaryDirectory.resolve("blinker.c")));
+        assertTrue(Files.exists(temporaryDirectory.resolve("blinker.module.yaml")));
+        String renamedSpec = Files.readString(temporaryDirectory.resolve("blinker.module.yaml"));
+        assertEquals("kind: module\nname: blinker\n", renamedSpec.replace("\r\n", "\n"), "no header:/source: lines added");
+    }
+
+    @Test
     void refusesUnknownModuleName() throws Exception {
         CliFixture cli = new CliFixture(temporaryDirectory);
         assertEquals(0, cli.run("init"));

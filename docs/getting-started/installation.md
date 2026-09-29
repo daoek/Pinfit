@@ -30,7 +30,7 @@ checksum file attached.
     with that version (`latest` also works):
 
     ```powershell
-    .\install.ps1 -Version 0.1.0-beta.5
+    .\install.ps1 -Version 0.1.0
     ```
 
     !!! tip "If PowerShell blocks the downloaded script"
@@ -39,7 +39,7 @@ checksum file attached.
         through an explicitly scoped bypass instead:
 
         ```powershell
-        powershell -ExecutionPolicy Bypass -File .\install.ps1 -Version 0.1.0-beta.5
+        powershell -ExecutionPolicy Bypass -File .\install.ps1 -Version 0.1.0
         ```
 
         That flag applies only to the single `powershell.exe` invocation it is passed to. It does
@@ -56,7 +56,7 @@ checksum file attached.
     To pin a specific version, pass it through to the script:
 
     ```console
-    curl -fsSL https://raw.githubusercontent.com/daoek/Pinfit/main/scripts/install.sh | sh -s -- --version 0.1.0-beta.5
+    curl -fsSL https://raw.githubusercontent.com/daoek/Pinfit/main/scripts/install.sh | sh -s -- --version 0.1.0
     ```
 
 "Newest" means the newest stable release, or - while only prereleases exist - the newest

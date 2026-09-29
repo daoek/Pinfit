@@ -14,6 +14,33 @@ class DetachTest {
     Path temporaryDirectory;
 
     @Test
+    void detachAlsoRemovesPinfitSwitchTags() throws Exception {
+        CliFixture setup = new CliFixture(temporaryDirectory);
+        assertEquals(0, setup.run("init"));
+        Files.writeString(temporaryDirectory.resolve("motor.module.yaml"), """
+                kind: module
+                name: motor
+                enums:
+                  - name: fault_t
+                    values: [{ name: FAULT_A }, { name: FAULT_B }]
+                functions:
+                  - { name: motor_handle, parameters: [fault_t fault], visibility: public }
+                """);
+        assertEquals(0, setup.run("generate"));
+        Path source = temporaryDirectory.resolve("motor.c");
+        Files.writeString(source, Files.readString(source).replace(
+                "/*@Pinfit usercode+ function.motor_handle.body*/\n",
+                "/*@Pinfit usercode+ function.motor_handle.body*/\n    /*@PinfitSwitch fault_t*/\n    switch (fault)\n    {\n    }\n"));
+        assertEquals(0, setup.run("generate"), setup.errors());
+
+        CliFixture confirmed = new CliFixture(temporaryDirectory, temporaryDirectory.getFileName() + "\n");
+        assertEquals(0, confirmed.run("detach"));
+        String detached = Files.readString(source);
+        assertFalse(detached.contains("@Pinfit"), detached);
+        assertTrue(detached.contains("case FAULT_B:"), "the expanded switch itself stays");
+    }
+
+    @Test
     void requiresExactProjectNameAndKeepsUnrelatedYaml() throws Exception {
         CliFixture setup = new CliFixture(temporaryDirectory);
         assertEquals(0, setup.run("init"));
