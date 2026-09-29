@@ -8,7 +8,7 @@
   <!-- The single source of the version: the next release, as -SNAPSHOT until it is tagged. The
        release workflow refuses a tag that doesn't match this (minus -SNAPSHOT), and the jar
        reports it as its Implementation-Version (shown by the version flag). -->
-  <version>0.1.0-SNAPSHOT</version>
+  <version>0.1.1-SNAPSHOT</version>
 
   <name>Pinfit</name>
   <url>https://daoek.github.io/Pinfit/</url>

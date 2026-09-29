@@ -123,8 +123,14 @@ assert_sha256_match() {
 
 # Newest stable release; before the first stable one exists, the newest prerelease.
 resolve_latest_tag() {
-    api="https://api.github.com/repos/$REPO_SLUG/releases"
-    json=$(curl -fsSL "$api/latest" 2>/dev/null || curl -fsSL "$api?per_page=1") || return 1
+    # github.com/.../releases/latest redirects to the newest stable release's tag page. Unlike the
+    # REST API it is not rate-limited (60 calls/hour per IP, easily hit behind a shared office IP).
+    location=$(curl -fsSI -o /dev/null -w '%{redirect_url}' "https://github.com/$REPO_SLUG/releases/latest" 2>/dev/null || true)
+    case "$location" in
+        */releases/tag/*) echo "${location##*/}"; return 0 ;;
+    esac
+    # No stable release yet: the API lists prereleases too.
+    json=$(curl -fsSL "https://api.github.com/repos/$REPO_SLUG/releases?per_page=1") || return 1
     printf '%s\n' "$json" | sed -n 's/.*"tag_name": *"\([^"]*\)".*/\1/p' | head -n 1
 }
 

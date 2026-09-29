@@ -96,16 +96,31 @@ function Assert-Sha256Match {
 
 function Resolve-LatestTag {
     # Newest stable release; before the first stable one exists, the newest prerelease.
-    $headers = @{ 'User-Agent' = 'pinfit-installer' }
+    # github.com/.../releases/latest redirects to the newest stable release's tag page. Unlike the
+    # REST API it is not rate-limited (60 calls/hour per IP, easily hit behind a shared office IP).
     try {
-        return (Invoke-RestMethod -Uri "https://api.github.com/repos/$repositorySlug/releases/latest" -Headers $headers).tag_name
-    } catch {
-        $releases = @(Invoke-RestMethod -Uri "https://api.github.com/repos/$repositorySlug/releases?per_page=1" -Headers $headers)
-        if ($releases.Count -eq 0) {
-            throw "No published release found at https://github.com/$repositorySlug/releases"
+        $request = [System.Net.WebRequest]::Create("https://github.com/$repositorySlug/releases/latest")
+        $request.Method = 'HEAD'
+        $request.AllowAutoRedirect = $false
+        $response = $request.GetResponse()
+        try {
+            $location = $response.Headers['Location']
+        } finally {
+            $response.Close()
         }
-        return $releases[0].tag_name
+        if ($location -match '/releases/tag/([^/]+)$') {
+            return $Matches[1]
+        }
+    } catch {
+        # Fall through to the API below.
     }
+    # No stable release yet: the API lists prereleases too.
+    $headers = @{ 'User-Agent' = 'pinfit-installer' }
+    $releases = @(Invoke-RestMethod -Uri "https://api.github.com/repos/$repositorySlug/releases?per_page=1" -Headers $headers)
+    if ($releases.Count -eq 0) {
+        throw "No published release found at https://github.com/$repositorySlug/releases"
+    }
+    return $releases[0].tag_name
 }
 
 if ($Version -eq 'latest') {
