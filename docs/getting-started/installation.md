@@ -24,7 +24,7 @@ checksum file attached.
     and run it with the version you want:
 
     ```powershell
-    .\install.ps1 -Version 0.1.0-beta.3
+    .\install.ps1 -Version 0.1.0-beta.4
     ```
 
     !!! tip "If PowerShell blocks the script"
@@ -33,7 +33,7 @@ checksum file attached.
         through an explicitly scoped bypass instead:
 
         ```powershell
-        powershell -ExecutionPolicy Bypass -File .\install.ps1 -Version 0.1.0-beta.3
+        powershell -ExecutionPolicy Bypass -File .\install.ps1 -Version 0.1.0-beta.4
         ```
 
         That flag applies only to the single `powershell.exe` invocation it is passed to. It does
@@ -46,7 +46,7 @@ checksum file attached.
 
     ```console
     chmod +x install.sh
-    ./install.sh --version 0.1.0-beta.3
+    ./install.sh --version 0.1.0-beta.4
     ```
 
 The script downloads that release's JAR and `SHA256SUMS` over HTTPS from GitHub, verifies the

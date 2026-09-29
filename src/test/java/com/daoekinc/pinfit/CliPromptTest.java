@@ -60,6 +60,19 @@ class CliPromptTest {
     }
 
     @Test
+    void switchEnumDeclinedWritesNothing() throws Exception {
+        Path source = moduleWithExternalEnumSwitch();
+        Path header = temporaryDirectory.resolve("motor.h");
+        Files.writeString(temporaryDirectory.resolve("motor.module.yaml"),
+                Files.readString(temporaryDirectory.resolve("motor.module.yaml")) + "description: changed\n");
+        String headerBefore = Files.readString(header);
+        String sourceBefore = Files.readString(source);
+        assertEquals(1, new CliFixture(temporaryDirectory, "").run("generate"));
+        assertEquals(headerBefore, Files.readString(header));
+        assertEquals(sourceBefore, Files.readString(source));
+    }
+
+    @Test
     void switchEnumWithUnreadableInput() throws Exception {
         moduleWithExternalEnumSwitch();
         CliFixture cli = new CliFixture(temporaryDirectory, CliFixture.failingInput());

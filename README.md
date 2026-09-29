@@ -20,11 +20,11 @@ Linux/macOS: download [`install.sh`](https://github.com/daoek/Pinfit/raw/main/sc
 Run it with the version you want:
 
 ```powershell
-.\install.ps1 -Version 0.1.0-beta.3
+.\install.ps1 -Version 0.1.0-beta.4
 ```
 
 ```console
-./install.sh --version 0.1.0-beta.3
+./install.sh --version 0.1.0-beta.4
 ```
 
 It downloads that [release](https://github.com/daoek/Pinfit/releases), verifies the jar against the

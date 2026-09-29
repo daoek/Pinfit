@@ -20,6 +20,7 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
+import java.nio.file.LinkOption;
 import java.nio.file.Path;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.StandardCopyOption;
@@ -273,8 +274,9 @@ public final class PinfitGenerator {
         Map<String, ExternalEnumMatch> resolvedExternal = new LinkedHashMap<>();
         Map<Path, Set<String>> linkedThisRun = new LinkedHashMap<>();
 
-        int total = outputs.size();
-        int[] completed = {0};
+        // Expand every @PinfitSwitch before the first write, so an unresolvable or unconfirmed
+        // enum fails the run with nothing written instead of leaving it half-generated.
+        List<String> contents = new ArrayList<>();
         for (Output output : outputs) {
             String content = output.content();
             if (enumIndex != null && SwitchTagProcessor.isUsed(content)) {
@@ -282,10 +284,16 @@ public final class PinfitGenerator {
                         enumIndex, linkedFileMembers, resolvedExternal, linkedThisRun, switchEnumConfirmation);
                 content = SwitchTagProcessor.process(content, output.path(), project.indent(), resolver);
             }
+            contents.add(content);
+        }
+
+        int total = outputs.size();
+        for (int index = 0; index < total; index++) {
+            Output output = outputs.get(index);
+            String content = contents.get(index);
             tags.writeGenerated(output.path(), content, project.lineEnding());
             reportOrphanedRegions(output.path(), content, warnings);
-            completed[0]++;
-            progress.onFileGenerated(completed[0], total, output.specSource(), output.path(), output.existed(), output.regionsCarried());
+            progress.onFileGenerated(index + 1, total, output.specSource(), output.path(), output.existed(), output.regionsCarried());
         }
 
         List<Path> generatedFiles = new ArrayList<>(outputs.stream().map(Output::path).toList());
@@ -398,11 +406,6 @@ public final class PinfitGenerator {
         void onWarning(String message);
     }
 
-    /**
-     * Every enum the project already declares in YAML, as of the start of this generate() call -
-     * never updated as enums get persisted mid-run, so a later lookup for a DIFFERENT owning spec
-     * still goes through {@link #resolveSwitchEnum} and gets its own copy persisted too.
-     */
     /**
      * Snapshot of every enum the project can resolve an @PinfitSwitch against, taken once at the
      * start of generate() and never updated mid-run (a spec newly linked during this run must still
@@ -936,7 +939,7 @@ public final class PinfitGenerator {
                 }
                 onDirectory.onDirectory(total.incrementAndGet(), directory);
                 try (Stream<Path> entries = Files.list(directory)) {
-                    entries.filter(Files::isDirectory).forEach(subdirectory ->
+                    entries.filter(entry -> Files.isDirectory(entry, LinkOption.NOFOLLOW_LINKS)).forEach(subdirectory ->
                             submitDirectoryWalkTask(pool, phaser, scope, subdirectory, total, onDirectory));
                 } catch (IOException exception) {
                     // Inaccessible directory (permissions, a broken junction, ...) - skip it, don't abort the walk.

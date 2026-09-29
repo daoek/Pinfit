@@ -6,7 +6,7 @@
 # yourself, so nothing outside the install directory is ever touched.
 #
 # Two modes:
-#   - Pass --version <tag> (e.g. "0.1.0-beta.3") to download that published release's jar and
+#   - Pass --version <tag> (e.g. "0.1.0-beta.4") to download that published release's jar and
 #     SHA256SUMS from GitHub over HTTPS, verify the checksum, and install only if it matches.
 #     Nothing is written to the install directory if verification fails.
 #   - Omit --version to build from the local checkout instead (`mvn clean package`), which is

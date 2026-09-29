@@ -48,7 +48,9 @@ switch (opcode)
 
 From then on, edit only inside the `switchcase.<enum>.<case>` regions. They survive regeneration
 like any other user region, and **a new enum member automatically gets its own empty case** on the
-next run.
+next run. Removing a member works the other way round: if its case region still holds code,
+generation fails and names that case, so you can move or delete the code first. An empty case is
+removed without asking.
 
 !!! warning "The skeleton is Pinfit's now"
 

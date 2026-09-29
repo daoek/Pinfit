@@ -132,12 +132,21 @@ public final class SwitchTagProcessor {
     }
 
     private static Map<String, String> resolveCaseBodies(List<String> oldBody, String enumType, List<String> members, Path file) {
+        Set<String> memberSet = new LinkedHashSet<>(members);
         Map<String, String> managed = extractManagedCases(oldBody, enumType, file);
         if (!managed.isEmpty()) {
+            // A member removed from the enum would otherwise take its case's code with it.
+            for (Map.Entry<String, String> entry : managed.entrySet()) {
+                String label = entry.getKey();
+                if (!label.equals("default") && !memberSet.contains(label) && !entry.getValue().isBlank()) {
+                    throw new PinfitException(file + ": @PinfitSwitch " + enumType + " has code in the case for '" + label
+                            + "', which is no longer a member of " + enumType
+                            + " - move or delete that code before generating again");
+                }
+            }
             return managed;
         }
         Map<String, String> legacy = extractLegacyCases(oldBody);
-        Set<String> memberSet = new LinkedHashSet<>(members);
         for (String label : legacy.keySet()) {
             if (!label.equals("default") && !memberSet.contains(label)) {
                 throw new PinfitException(file + ": @PinfitSwitch " + enumType + " has an existing 'case " + label

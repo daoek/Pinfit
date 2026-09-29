@@ -94,6 +94,33 @@ class SwitchTagProcessorTest {
     }
 
     @Test
+    void rejectsCodeInCaseOfRemovedMember() {
+        PinfitException error = assertThrows(PinfitException.class, () -> process("""
+                /*@PinfitSwitch e_t*/
+                switch (v) {
+                /*@Pinfit usercode+ switchcase.e_t.C*/
+                handle_c();
+                /*@Pinfit usercode-*/
+                }"""));
+        assertTrue(error.getMessage().contains("case for 'C', which is no longer a member of e_t"), error.getMessage());
+    }
+
+    @Test
+    void dropsEmptyCaseOfRemovedMember() {
+        String result = process("""
+                /*@PinfitSwitch e_t*/
+                switch (v) {
+                /*@Pinfit usercode+ switchcase.e_t.A*/
+                keep_a();
+                /*@Pinfit usercode-*/
+                /*@Pinfit usercode+ switchcase.e_t.C*/
+                /*@Pinfit usercode-*/
+                }""");
+        assertTrue(result.contains("keep_a();"), result);
+        assertFalse(result.contains("case C:"), result);
+    }
+
+    @Test
     void leavesContentWithoutTagsUnchanged() {
         assertEquals("int x;\nint y;", process("int x;\nint y;"));
         assertTrue(SwitchTagProcessor.isUsed("/*@CGenSwitch e_t*/"));
