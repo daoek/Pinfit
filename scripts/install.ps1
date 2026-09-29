@@ -3,13 +3,22 @@
     are required and nothing outside the install directory is touched, other than adding that
     directory to the current user's PATH.
 
+    One-line install of the newest release, from any PowerShell prompt:
+
+        irm https://raw.githubusercontent.com/daoek/Pinfit/main/scripts/install.ps1 | iex
+
+    What gets installed is self-contained: pinfit.jar plus its own trimmed Java runtime and a
+    launcher that only uses that runtime. No Java has to be installed on the machine.
+
     Two modes:
-      - Pass -Version <tag> (e.g. "0.1.0-beta.4" - see the Releases page for what's published)
-        to download that published release's jar and
-        SHA256SUMS from GitHub over HTTPS, verify the checksum, and install only if it matches.
-        Nothing is written to the install directory if verification fails.
-      - Omit -Version to build from the local checkout instead (`mvn clean package`), which is
-        what the "Pinfit: Package + Install" VS Code task and contributors use.
+      - Pass -Version <tag> (e.g. "0.1.0-beta.5" - see the Releases page for what's published),
+        or -Version latest, to download that release's Windows bundle and SHA256SUMS from GitHub
+        over HTTPS, verify the checksum, and install only if it matches. Nothing is written to
+        the install directory if verification fails. This is also the default whenever the
+        script is not run from a repository checkout (e.g. via irm | iex).
+      - Run from a checkout without -Version to build the bundle instead
+        (`mvn -Pbundle clean package`, which needs a JDK 17+ with jlink), which is what the
+        "Pinfit: Package + Install" VS Code task and contributors use.
 
     A note on -ExecutionPolicy Bypass, since it shows up in the recommended invocation: that
     flag scopes to the single powershell.exe process it's passed to. It does not change the
@@ -24,6 +33,9 @@ param(
     [switch]$SkipPathUpdate
 )
 
+# Everything runs in a child scope: piped into iex, this script otherwise executes in the caller's
+# own session and would leave StrictMode and ErrorActionPreference changed there afterwards.
+& {
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 
@@ -31,8 +43,16 @@ if ($Version -and $SkipBuild) {
     throw '-Version and -SkipBuild are mutually exclusive: -Version installs a downloaded release and never builds locally.'
 }
 
-$repositoryRoot = Split-Path -Parent $PSScriptRoot
 $repositorySlug = 'daoek/Pinfit'
+# Empty when the script is piped into iex - there is then no checkout to build from.
+$repositoryRoot = if ($PSScriptRoot) { Split-Path -Parent $PSScriptRoot } else { $null }
+$inCheckout = $repositoryRoot -and (Test-Path -LiteralPath (Join-Path $repositoryRoot 'pom.xml') -PathType Leaf)
+if (-not $Version -and -not $inCheckout) {
+    if ($SkipBuild) {
+        throw '-SkipBuild needs a repository checkout; run install.ps1 from inside one.'
+    }
+    $Version = 'latest'
+}
 $resolvedInstallDirectory = [System.IO.Path]::GetFullPath($InstallDirectory)
 $pathRoot = [System.IO.Path]::GetPathRoot($resolvedInstallDirectory)
 $markerName = '.pinfit-install-marker'
@@ -74,70 +94,85 @@ function Assert-Sha256Match {
     Write-Output "Checksum verified for $FileName ($actualHash)"
 }
 
+function Resolve-LatestTag {
+    # Newest stable release; before the first stable one exists, the newest prerelease.
+    $headers = @{ 'User-Agent' = 'pinfit-installer' }
+    try {
+        return (Invoke-RestMethod -Uri "https://api.github.com/repos/$repositorySlug/releases/latest" -Headers $headers).tag_name
+    } catch {
+        $releases = @(Invoke-RestMethod -Uri "https://api.github.com/repos/$repositorySlug/releases?per_page=1" -Headers $headers)
+        if ($releases.Count -eq 0) {
+            throw "No published release found at https://github.com/$repositorySlug/releases"
+        }
+        return $releases[0].tag_name
+    }
+}
+
+if ($Version -eq 'latest') {
+    try {
+        $Version = Resolve-LatestTag
+    } catch {
+        throw "Could not look up the latest release of $repositorySlug`: $($_.Exception.Message)"
+    }
+    Write-Output "Latest release: $Version"
+}
+
 if ($Version) {
     $tag = if ($Version.StartsWith('v')) { $Version } else { "v$Version" }
     $bareVersion = $tag.TrimStart('v')
-    $jarName = "pinfit-$bareVersion.jar"
+    # Windows on ARM runs this x64 bundle under emulation, so one Windows bundle serves both.
+    $bundleName = "pinfit-$bareVersion-windows-x64.zip"
     $releaseBaseUrl = "https://github.com/$repositorySlug/releases/download/$tag"
 
     $downloadDirectory = Join-Path ([System.IO.Path]::GetTempPath()) "pinfit-install-$tag"
+    if (Test-Path -LiteralPath $downloadDirectory) {
+        Remove-Item -Recurse -Force -LiteralPath $downloadDirectory
+    }
     New-Item -ItemType Directory -Force -Path $downloadDirectory | Out-Null
-    $downloadedJar = Join-Path $downloadDirectory $jarName
+    $downloadedBundle = Join-Path $downloadDirectory $bundleName
     $downloadedSums = Join-Path $downloadDirectory 'SHA256SUMS'
 
-    Write-Output "Downloading $jarName from release $tag..."
+    Write-Output "Downloading $bundleName from release $tag..."
     try {
-        Invoke-WebRequest -Uri "$releaseBaseUrl/$jarName" -OutFile $downloadedJar -UseBasicParsing
+        Invoke-WebRequest -Uri "$releaseBaseUrl/$bundleName" -OutFile $downloadedBundle -UseBasicParsing
         Invoke-WebRequest -Uri "$releaseBaseUrl/SHA256SUMS" -OutFile $downloadedSums -UseBasicParsing
     } catch {
-        throw "Could not download release '$tag' from https://github.com/$repositorySlug/releases: $($_.Exception.Message)"
+        throw ("Could not download $bundleName from release '$tag' (https://github.com/$repositorySlug/releases). " +
+            "Releases before the bundled Java runtime was introduced have no such file - install a newer version. " +
+            $_.Exception.Message)
     }
-    Assert-Sha256Match -FilePath $downloadedJar -FileName $jarName -Sha256SumsPath $downloadedSums
-    $sourceJarPath = $downloadedJar
-
-    # -Version mode is meant to run from a single downloaded install.ps1, with no repo
-    # checkout alongside it - so pinfit.cmd/uninstall.ps1 can't be assumed to sit next to this
-    # script (via $PSScriptRoot) the way they do in the local-build path below. Fetch them
-    # from the same tagged ref instead.
-    $pinfitCmdSource = Join-Path $downloadDirectory 'pinfit.cmd'
-    $uninstallSource = Join-Path $downloadDirectory 'uninstall.ps1'
-    $rawBaseUrl = "https://raw.githubusercontent.com/$repositorySlug/$tag/scripts"
-    try {
-        Invoke-WebRequest -Uri "$rawBaseUrl/pinfit.cmd" -OutFile $pinfitCmdSource -UseBasicParsing
-        Invoke-WebRequest -Uri "$rawBaseUrl/uninstall.ps1" -OutFile $uninstallSource -UseBasicParsing
-    } catch {
-        throw "Could not download install scripts for release '$tag': $($_.Exception.Message)"
-    }
+    Assert-Sha256Match -FilePath $downloadedBundle -FileName $bundleName -Sha256SumsPath $downloadedSums
+    $bundleDirectory = Join-Path $downloadDirectory 'bundle'
+    Expand-Archive -LiteralPath $downloadedBundle -DestinationPath $bundleDirectory
 } else {
     if (-not $SkipBuild) {
         $maven = Get-Command mvn.cmd -ErrorAction SilentlyContinue
         if ($null -eq $maven) {
             throw 'Maven (mvn.cmd) was not found on PATH.'
         }
-        # Clean first so Shade never consumes a JAR that was already shaded by a prior build.
-        & $maven.Source -f (Join-Path $repositoryRoot 'pom.xml') clean package
+        # -Pbundle adds the jlink runtime and launcher (target\bundle). Clean first so Shade never
+        # consumes a JAR that was already shaded by a prior build.
+        & $maven.Source -f (Join-Path $repositoryRoot 'pom.xml') -Pbundle clean package
         if ($LASTEXITCODE -ne 0) {
             throw "Maven build failed with exit code $LASTEXITCODE"
         }
     }
-
-    $jarCandidates = @(Get-ChildItem -File -LiteralPath (Join-Path $repositoryRoot 'target') -Filter 'pinfit-*.jar' |
-        Where-Object { $_.Name -notlike 'original-*' -and $_.Name -notlike '*-sources.jar' -and $_.Name -notlike '*-javadoc.jar' } |
-        Sort-Object LastWriteTimeUtc -Descending)
-    if ($jarCandidates.Count -eq 0) {
-        throw "No packaged Pinfit JAR found. Run without -SkipBuild first."
-    }
-    $sourceJarPath = $jarCandidates[0].FullName
-    $pinfitCmdSource = Join-Path $PSScriptRoot 'pinfit.cmd'
-    $uninstallSource = Join-Path $PSScriptRoot 'uninstall.ps1'
+    $bundleDirectory = Join-Path $repositoryRoot 'target\bundle'
 }
 
+foreach ($required in 'pinfit.jar', 'pinfit.cmd', 'runtime\bin\java.exe') {
+    if (-not (Test-Path -LiteralPath (Join-Path $bundleDirectory $required) -PathType Leaf)) {
+        throw "The Pinfit bundle in $bundleDirectory is incomplete (no $required). Build it with 'mvn -Pbundle package', or run without -SkipBuild."
+    }
+}
+
+# Replace the whole installation, runtime included, so no file from an older version lingers. The
+# marker check above already proved this directory is Pinfit's own.
 New-Item -ItemType Directory -Force -Path $resolvedInstallDirectory | Out-Null
-$temporaryJar = Join-Path $resolvedInstallDirectory 'pinfit.jar.new'
-Copy-Item -Force -LiteralPath $sourceJarPath -Destination $temporaryJar
-Move-Item -Force -LiteralPath $temporaryJar -Destination (Join-Path $resolvedInstallDirectory 'pinfit.jar')
-Copy-Item -Force -LiteralPath $pinfitCmdSource -Destination (Join-Path $resolvedInstallDirectory 'pinfit.cmd')
-Copy-Item -Force -LiteralPath $uninstallSource -Destination (Join-Path $resolvedInstallDirectory 'Uninstall-Pinfit.ps1')
+Get-ChildItem -Force -LiteralPath $resolvedInstallDirectory |
+    Where-Object { $_.Name -ne $markerName } |
+    Remove-Item -Recurse -Force
+Copy-Item -Recurse -Force -Path (Join-Path $bundleDirectory '*') -Destination $resolvedInstallDirectory
 Set-Content -LiteralPath $markerPath -Value 'Pinfit managed installation. Safe removal requires this marker.' -Encoding utf8
 
 if (-not $SkipPathUpdate) {
@@ -160,4 +195,5 @@ Write-Output "Pinfit installed in $resolvedInstallDirectory"
 Write-Output "Installed jar SHA256: $installedHash"
 if (-not $SkipPathUpdate) {
     Write-Output 'Open a new terminal, then run: pinfit --help'
+}
 }

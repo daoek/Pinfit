@@ -1,0 +1,7 @@
+kind: interface
+name: bus_hal
+includes: [<stdint.h>]
+invalidReturn: -1
+uninitializedReturn: -2
+functions:
+  - { name: send, return: int32_t, parameters: [const uint8_t *data, uint32_t length] }

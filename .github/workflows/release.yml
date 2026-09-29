@@ -9,47 +9,117 @@ permissions:
   contents: write
 
 jobs:
-  release:
-    runs-on: windows-latest
+  # pom.xml is the single source of the version: it names the next release as <version>-SNAPSHOT,
+  # so a tag that disagrees with it is a mistake - fail before anything is built or published.
+  check:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
     steps:
       - uses: actions/checkout@v4
 
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: '17'
+          java-version: '21'
           cache: maven
 
-      - name: Derive version from tag
+      - name: Check tag matches pom.xml
         id: version
-        shell: pwsh
         run: |
-          $version = "${{ github.ref_name }}".TrimStart('v')
-          "version=$version" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
-
-      - name: Set project version
-        shell: pwsh
-        run: mvn -B "-DnewVersion=${{ steps.version.outputs.version }}" -DgenerateBackupPoms=false versions:set
+          version="${GITHUB_REF_NAME#v}"
+          pom_version=$(mvn -B -q help:evaluate -Dexpression=project.version -DforceStdout)
+          if [ "${pom_version%-SNAPSHOT}" != "$version" ]; then
+            echo "Tag $GITHUB_REF_NAME does not match pom.xml version $pom_version (expected tag v${pom_version%-SNAPSHOT}). Update pom.xml or re-tag." >&2
+            exit 1
+          fi
+          echo "version=$version" >> "$GITHUB_OUTPUT"
 
       - name: Build and test
         run: mvn -B clean verify
 
-      - name: Compute checksum
+  # jlink can only build a runtime for the platform it runs on, so every bundle is built on a
+  # runner of its own OS and CPU. The runtime comes from JDK 21 (LTS); the jar still targets 17.
+  bundle:
+    needs: check
+    strategy:
+      fail-fast: true
+      matrix:
+        include:
+          - { runner: windows-latest, platform: windows-x64, archive: zip }
+          - { runner: ubuntu-latest, platform: linux-x64, archive: tar.gz }
+          - { runner: ubuntu-24.04-arm, platform: linux-aarch64, archive: tar.gz }
+          - { runner: macos-15-intel, platform: macos-x64, archive: tar.gz }
+          - { runner: macos-15, platform: macos-aarch64, archive: tar.gz }
+    runs-on: ${{ matrix.runner }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+
+      - name: Set project version
+        shell: bash
+        run: mvn -B -q "-DnewVersion=${{ needs.check.outputs.version }}" -DgenerateBackupPoms=false versions:set
+
+      # Tests already ran in the check job; this job only packages.
+      - name: Build bundle
+        shell: bash
+        run: mvn -B -Pbundle -DskipTests clean package
+
+      # The bundled launcher must run with no Java anywhere else on the machine.
+      - name: Smoke-test the bundle without a system Java (Windows)
+        if: matrix.archive == 'zip'
         shell: pwsh
         run: |
-          $jar = Get-ChildItem -File -Path target -Filter 'pinfit-*.jar' |
-              Where-Object { $_.Name -notlike 'original-*' -and $_.Name -notlike '*-sources.jar' -and $_.Name -notlike '*-javadoc.jar' } |
-              Select-Object -First 1
-          $hash = (Get-FileHash -Algorithm SHA256 -LiteralPath $jar.FullName).Hash.ToLower()
-          "$hash  $($jar.Name)" | Out-File -FilePath (Join-Path target 'SHA256SUMS') -Encoding utf8 -NoNewline
-          "`n" | Out-File -FilePath (Join-Path target 'SHA256SUMS') -Encoding utf8 -Append -NoNewline
+          Expand-Archive "target/pinfit-${{ needs.check.outputs.version }}-${{ matrix.platform }}.zip" smoke
+          $env:JAVA_HOME = ''
+          $env:Path = "$env:SystemRoot\System32"
+          cmd /c "smoke\pinfit.cmd --version"
+          if ($LASTEXITCODE -ne 0) { exit 1 }
+
+      - name: Smoke-test the bundle without a system Java (Linux/macOS)
+        if: matrix.archive == 'tar.gz'
+        shell: bash
+        run: |
+          mkdir smoke
+          tar -xzf "target/pinfit-${{ needs.check.outputs.version }}-${{ matrix.platform }}.tar.gz" -C smoke
+          env -u JAVA_HOME PATH=/usr/bin:/bin ./smoke/pinfit --version
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: bundle-${{ matrix.platform }}
+          path: |
+            target/pinfit-${{ needs.check.outputs.version }}-${{ matrix.platform }}.${{ matrix.archive }}
+            target/pinfit-${{ needs.check.outputs.version }}.jar
+
+  publish:
+    needs: [check, bundle]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: dist
+          merge-multiple: true
+
+      # The plain jar (from any bundle job - they are the same build) stays available for people
+      # who would rather run it on their own Java with `java -jar`.
+      - name: Compute checksums
+        working-directory: dist
+        run: |
+          ls -l
+          sha256sum pinfit-* > SHA256SUMS
+          cat SHA256SUMS
 
       - name: Publish release
         uses: softprops/action-gh-release@v2
         with:
           files: |
-            target/pinfit-*.jar
-            target/SHA256SUMS
+            dist/pinfit-*
+            dist/SHA256SUMS
           fail_on_unmatched_files: true
           generate_release_notes: true
           # A semver prerelease tag (v0.1.0-beta.3, v1.0.0-rc.1) carries a hyphen;

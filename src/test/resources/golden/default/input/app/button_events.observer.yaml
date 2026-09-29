@@ -1,0 +1,5 @@
+kind: observer
+name: button_events
+description: Button event fan-out
+interface: button_listener
+capacity: 4

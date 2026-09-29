@@ -89,6 +89,16 @@ class PatternGeneratorsTest {
     }
 
     @Test
+    void unexpectedExceptionIsReportedAsInternalErrorWithoutStackTrace() {
+        CliFixture cli = new CliFixture(temporaryDirectory);
+        // A NUL byte is invalid in every file system path - Path.resolve throws InvalidPathException.
+        assertEquals(2, cli.run("init", "bad\u0000dir"));
+        assertTrue(cli.errors().contains("Pinfit internal error"), cli.errors());
+        assertTrue(cli.errors().contains("InvalidPathException"), cli.errors());
+        assertFalse(cli.errors().contains("\tat "), "no stack trace unless PINFIT_DEBUG is set");
+    }
+
+    @Test
     void functionWithoutDescriptionFallsBackToItsNameInDoxygen() throws Exception {
         CliFixture cli = new CliFixture(temporaryDirectory);
         assertEquals(0, cli.run("init"));

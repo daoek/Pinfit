@@ -1,0 +1,33 @@
+kind: interface
+name: common_iic
+description: Portable I2C master interface
+invalidReturn: COMMON_IIC_INVALID_PARAM
+uninitializedReturn: COMMON_IIC_NOT_INITIALIZED
+includes: [<stdint.h>]
+
+enums:
+  - name: common_iic_status_t
+    description: Transfer result
+    values:
+      - { name: COMMON_IIC_SUCCESS, value: 0 }
+      - { name: COMMON_IIC_INVALID_PARAM, value: 1 }
+      - { name: COMMON_IIC_NOT_INITIALIZED }
+
+structs:
+  - name: common_iic_options_t
+    description: Bus options
+    fields:
+      - uint32_t speed
+      - { type: uint8_t, name: address_bits, description: 7 or 10 }
+
+functions:
+  - name: write
+    return: common_iic_status_t
+    description: Write bytes to a slave
+    parameters:
+      - uint32_t slave_address
+      - const uint8_t *data
+      - { type: uint32_t, name: length, description: Byte count }
+  - name: configure
+    return: void
+    parameters: [const common_iic_options_t *options]

@@ -1,0 +1,35 @@
+kind: module
+name: ra_iic
+description: RA-family I2C implementation
+implements: [common_iic]
+includes: [<stdbool.h>]
+
+enums:
+  - name: ra_iic_mode_t
+    values:
+      - { name: RA_IIC_MODE_OFF, value: 0 }
+      - { name: RA_IIC_MODE_ON }
+
+context:
+  - void *hardware
+  - ra_iic_mode_t mode
+
+variables:
+  - uint32_t transfer_count public
+  - uint32_t error_count get
+  - uint8_t latch set
+  - bool busy
+  - uint8_t buffer[16]
+  - { type: uint32_t, name: ticks, visibility: public, initial: '0U', description: Uptime }
+
+functions:
+  - name: ra_iic_initialize
+    return: bool
+    description: One-time module initialization
+    parameters: []
+    invalidReturn: false
+    visibility: public
+  - name: ra_iic_checksum
+    return: uint8_t
+    parameters: [const uint8_t *data, uint32_t length]
+    invalidReturn: 0U

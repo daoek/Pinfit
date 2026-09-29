@@ -1,15 +1,14 @@
 # Installation
 
-Pinfit ships as a single self-contained JAR, so it runs anywhere a **Java 17 or newer runtime** is
-installed — Windows, Linux or macOS. You can install a published release without Maven or a clone
-of the repository, or build it from source.
+Pinfit installs as a self-contained bundle for Windows (x64), Linux (x64 and arm64) and macOS (Intel
+and Apple silicon). **You do not need Java, Maven or anything else installed.**
 
-!!! info "Java is a runtime requirement, not an install-time one"
+!!! info "Java is bundled, not required"
 
-    The install scripts below need no Java themselves — they only download or build a JAR. But
-    **running** `pinfit` afterwards does need Java 17+ on `PATH`. If you don't already have it,
-    install one first, e.g. from [Adoptium](https://adoptium.net). Both launchers check for it
-    and print a clear message rather than a raw JVM error if it's missing.
+    Pinfit is written in Java, but every release bundle carries its own trimmed Java runtime (about
+    20 MB, made with `jlink`), and the `pinfit` launcher only ever uses that runtime. A Java you may
+    already have, `JAVA_HOME` and `PATH` make no difference to it — installing or upgrading some
+    other Java can't break Pinfit, and Pinfit never touches yours.
 
 ## Install a release (recommended)
 
@@ -20,20 +19,27 @@ checksum file attached.
 
 === "Windows"
 
-    Download [`scripts/install.ps1`](https://github.com/daoek/Pinfit/raw/main/scripts/install.ps1)
-    and run it with the version you want:
+    In PowerShell, one line installs the newest release:
 
     ```powershell
-    .\install.ps1 -Version 0.1.0-beta.4
+    irm https://raw.githubusercontent.com/daoek/Pinfit/main/scripts/install.ps1 | iex
     ```
 
-    !!! tip "If PowerShell blocks the script"
+    To pin a specific version, download
+    [`scripts/install.ps1`](https://github.com/daoek/Pinfit/raw/main/scripts/install.ps1) and run it
+    with that version (`latest` also works):
+
+    ```powershell
+    .\install.ps1 -Version 0.1.0-beta.5
+    ```
+
+    !!! tip "If PowerShell blocks the downloaded script"
 
         When your machine's default execution policy refuses to run a local `.ps1`, invoke it
         through an explicitly scoped bypass instead:
 
         ```powershell
-        powershell -ExecutionPolicy Bypass -File .\install.ps1 -Version 0.1.0-beta.4
+        powershell -ExecutionPolicy Bypass -File .\install.ps1 -Version 0.1.0-beta.5
         ```
 
         That flag applies only to the single `powershell.exe` invocation it is passed to. It does
@@ -41,24 +47,37 @@ checksum file attached.
 
 === "Linux / macOS"
 
-    Download [`scripts/install.sh`](https://github.com/daoek/Pinfit/raw/main/scripts/install.sh)
-    and run it with the version you want:
+    One line installs the newest release:
 
     ```console
-    chmod +x install.sh
-    ./install.sh --version 0.1.0-beta.4
+    curl -fsSL https://raw.githubusercontent.com/daoek/Pinfit/main/scripts/install.sh | sh
     ```
 
-The script downloads that release's JAR and `SHA256SUMS` over HTTPS from GitHub, verifies the
-JAR's SHA-256 against the published checksum, and installs it **only** if the checksum matches.
-Nothing is written to disk otherwise. At the end it prints the installed JAR's checksum so you
-can cross-check it by hand against the `SHA256SUMS` file on the
-[Releases page](https://github.com/daoek/Pinfit/releases).
+    To pin a specific version, pass it through to the script:
+
+    ```console
+    curl -fsSL https://raw.githubusercontent.com/daoek/Pinfit/main/scripts/install.sh | sh -s -- --version 0.1.0-beta.5
+    ```
+
+"Newest" means the newest stable release, or - while only prereleases exist - the newest
+prerelease. The one-liners fetch the installer from `main`; if you would rather read it before
+running it, download it first and run the file instead.
+
+The script picks the bundle for your OS and CPU (`pinfit-<version>-windows-x64.zip`,
+`-linux-x64.tar.gz`, `-linux-aarch64.tar.gz`, `-macos-x64.tar.gz` or `-macos-aarch64.tar.gz`),
+downloads it and `SHA256SUMS` over HTTPS from GitHub, verifies its SHA-256 against the published
+checksum, and installs it **only** if the checksum matches. Nothing is written to disk otherwise.
+Re-running it upgrades in place: the old installation, runtime included, is replaced as a whole. At
+the end it prints the installed JAR's checksum.
+
+Releases published before the bundled runtime was introduced (up to `0.1.0-beta.4`) have no bundle
+and cannot be installed with this script.
 
 ## Build and install from source
 
-For contributors, or to install an unreleased build. Requires **Java 17** and **Maven** (this is
-the one place that's true at install time too, since it actually compiles Pinfit).
+For contributors, or to install an unreleased build. Requires a **JDK 17 or newer** (with `jlink`,
+which every standard JDK has) and **Maven** — the one case where Java is needed, since it compiles
+Pinfit and builds the runtime that gets bundled.
 
 ```console
 git clone https://github.com/daoek/Pinfit.git
@@ -66,11 +85,11 @@ cd Pinfit
 mvn clean package
 ```
 
-That produces `target/pinfit-1.0-SNAPSHOT.jar`, which already contains SnakeYAML and can be copied
+That produces `target/pinfit-<version>.jar` (the version comes from `pom.xml`), which already contains SnakeYAML and can be copied
 anywhere without a separate dependency directory. You can run it directly:
 
 ```console
-java -jar target/pinfit-1.0-SNAPSHOT.jar --help
+java -jar target/pinfit-*.jar --help
 ```
 
 To install it as a `pinfit` command instead, run the same installer from the repository root with
@@ -88,8 +107,9 @@ no version:
     ./scripts/install.sh
     ```
 
-In this mode the script builds Pinfit locally (`mvn clean package`) rather than downloading
-anything, then installs the result.
+In this mode the script builds the bundle locally (`mvn -Pbundle clean package`: the jar, a
+`jlink` runtime from your JDK, and the launcher, in `target/bundle`) rather than downloading
+anything, then installs that.
 
 !!! tip "VS Code task"
 
@@ -166,21 +186,18 @@ This removes the install directory (and, on Windows, its `PATH` entry). It does 
 project: your `pinfit.yaml` files and generated C code stay exactly as they are. To remove Pinfit from
 a *project*, use [`pinfit detach`](../reference/cli.md#pinfit-detach).
 
-## Why a separate Java runtime, not a single native binary
+## Why a bundled runtime, not a single native binary
 
-Pinfit could in principle ship as a `jlink` custom runtime or a GraalVM native-image binary, so
-nobody needs Java installed at all. Not done today: SnakeYAML's YAML parsing leans on reflection
-in places `native-image` needs explicit reachability metadata for, so that path needs a real
-compatibility pass and testing before it could be trusted, and either approach adds a second
-platform-specific artifact per release to build, sign and maintain (`jlink` is the lower-risk of
-the two - a bundled JRE next to the jar, not a fully separate compiler - but still a second
-artifact). Tracked as a possible future improvement, not started.
+A GraalVM native-image binary would be smaller still, but SnakeYAML's YAML parsing leans on
+reflection in places `native-image` needs explicit reachability metadata for. A `jlink` runtime
+runs the exact jar the tests run, with no such risk. It contains only the two JDK modules Pinfit
+uses (`java.base` and `java.logging`).
 
 ## Running without installing
 
-Every command in these docs starts with `pinfit`. When no native launcher is installed, substitute
-the JAR:
+Every release also publishes the plain `pinfit-<version>.jar`. If you already have Java 17 or newer,
+you can run that directly instead of installing — substitute it for `pinfit` in every command:
 
 ```console
-java -jar path/to/pinfit-1.0-SNAPSHOT.jar generate
+java -jar path/to/pinfit-<version>.jar generate
 ```

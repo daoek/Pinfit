@@ -1,0 +1,6 @@
+kind: command-table
+name: uart_cmd
+description: UART command table
+commands:
+  - { name: PING, opcode: 0 }
+  - { name: RESET, opcode: 16, description: Soft reset }

@@ -18,5 +18,74 @@ jobs:
           java-version: '17'
           cache: maven
 
+      # Includes GoldenOutputTest (frozen generated C) and DocExamplesTest (docs show real output).
       - name: Build and test
         run: mvn -B clean verify
+
+  linux:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: maven
+
+      - name: Build, test and bundle
+        run: mvn -B -Pbundle clean verify
+
+      - name: Install C tools
+        run: sudo apt-get update && sudo apt-get install -y gcc-arm-none-eabi cppcheck
+
+      # Every golden expected file must compile warning-free, for the host and for a Cortex-M target.
+      - name: Compile generated C (gcc)
+        run: sh scripts/ci/compile-golden.sh
+
+      - name: Compile generated C (arm-none-eabi-gcc)
+        run: CC=arm-none-eabi-gcc sh scripts/ci/compile-golden.sh
+
+      # MISRA is a guideline Pinfit mostly follows, not a compliance claim: the report is published
+      # for review but never fails the build.
+      - name: MISRA report (cppcheck, informational)
+        continue-on-error: true
+        run: |
+          cppcheck --addon=misra --std=c99 --enable=style --inline-suppr -q \
+            --template='{file}:{line}: {id}: {message}' \
+            src/test/resources/golden/default/expected 2> misra-report.txt || true
+          echo "$(grep -c . misra-report.txt) finding(s)"
+          sort misra-report.txt | sed 's/:[0-9]*: /: /' | cut -d: -f2- | sort | uniq -c | sort -rn | head -40
+
+      - name: Upload MISRA report
+        uses: actions/upload-artifact@v4
+        with:
+          name: misra-report
+          path: misra-report.txt
+
+      # The installed launcher must work through a symlink (e.g. from ~/bin) and must not need
+      # any Java on the machine: it runs only the runtime bundled next to it.
+      - name: Launcher checks
+        run: |
+          sh scripts/install.sh --skip-build --install-dir "$RUNNER_TEMP/pinfit"
+          mkdir -p "$RUNNER_TEMP/bin"
+          ln -s "$RUNNER_TEMP/pinfit/pinfit" "$RUNNER_TEMP/bin/pinfit"
+          env -u JAVA_HOME PATH=/usr/bin:/bin "$RUNNER_TEMP/bin/pinfit" --version
+
+      # A version named in the install docs must have a published bundle, or the documented
+      # install command fails. The version pom.xml is about to release is allowed ahead of its tag.
+      - name: Documented versions are released
+        run: |
+          pending=$(mvn -B -q help:evaluate -Dexpression=project.version -DforceStdout)
+          pending=${pending%-SNAPSHOT}
+          versions=$(grep -rhoE '(-Version|--version) [0-9]+\.[0-9]+\.[0-9]+(-[A-Za-z0-9.]+)?' README.md docs scripts | awk '{print $2}' | sort -u)
+          for v in $versions; do
+            if [ "$v" = "$pending" ]; then
+              echo "ok: $v (pending release in pom.xml)"; continue
+            fi
+            url="https://github.com/daoek/Pinfit/releases/download/v$v/pinfit-$v-linux-x64.tar.gz"
+            if ! curl -fsIL -o /dev/null "$url"; then
+              echo "Documented version $v has no published bundle ($url)" >&2; exit 1
+            fi
+            echo "ok: $v"
+          done

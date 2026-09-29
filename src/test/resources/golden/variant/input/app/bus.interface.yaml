@@ -1,0 +1,8 @@
+kind: interface
+name: bus
+includes: [<stdint.h>]
+invalidReturn: -1
+uninitializedReturn: -2
+functions:
+  - { name: write, return: int32_t, parameters: [const uint8_t *data, uint32_t length] }
+  - { name: flush, return: int32_t, parameters: [] }

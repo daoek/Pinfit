@@ -1,0 +1,6 @@
+kind: interface
+name: button_listener
+includes: [<stdint.h>]
+functions:
+  - { name: pressed, return: void, parameters: [uint8_t button_id] }
+  - { name: released, return: void, parameters: [uint8_t button_id, uint32_t held_ms] }

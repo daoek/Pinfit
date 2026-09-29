@@ -5,11 +5,13 @@
 
   <groupId>com.daoekinc</groupId>
   <artifactId>pinfit</artifactId>
-  <version>1.0-SNAPSHOT</version>
+  <!-- The single source of the version: the next release, as -SNAPSHOT until it is tagged. The
+       release workflow refuses a tag that doesn't match this (minus -SNAPSHOT), and the jar
+       reports it as its Implementation-Version (shown by the version flag). -->
+  <version>0.1.0-beta.5-SNAPSHOT</version>
 
   <name>Pinfit</name>
-  <!-- FIXME change it to the project's website -->
-  <url>http://www.example.com</url>
+  <url>https://daoek.github.io/Pinfit/</url>
 
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -70,6 +72,10 @@
               <transformers>
                 <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
                   <mainClass>com.daoekinc.pinfit.App</mainClass>
+                  <manifestEntries>
+                    <Implementation-Title>Pinfit</Implementation-Title>
+                    <Implementation-Version>${project.version}</Implementation-Version>
+                  </manifestEntries>
                 </transformer>
               </transformers>
             </configuration>
@@ -122,4 +128,114 @@
       </plugins>
     </pluginManagement>
   </build>
+  <!--
+    Self-contained distribution: `mvn -Pbundle package` adds, next to the jar,
+    target/pinfit-<version>-<platform>.zip (Windows) or .tar.gz (Linux/macOS) holding
+      runtime/      a trimmed Java runtime made by jlink from the JDK running Maven
+      pinfit.jar
+      pinfit.cmd / pinfit            launcher that only ever uses runtime/ - no system Java
+      Uninstall-Pinfit.ps1 / uninstall.sh
+    so users need no Java at all. jlink can only build a runtime for the platform it runs on,
+    which is why the release workflow builds one bundle per OS/architecture runner.
+
+    Modules: java.base plus java.logging, which SnakeYAML uses. `jdeps` also lists java.desktop,
+    but only for SnakeYAML's JavaBeans support, which Pinfit's map-only loading never touches; the
+    golden and CI tests run against a runtime without it.
+  -->
+  <profiles>
+    <profile>
+      <id>bundle</id>
+      <build>
+        <plugins>
+          <plugin>
+            <artifactId>maven-antrun-plugin</artifactId>
+            <version>3.1.0</version>
+            <executions>
+              <execution>
+                <id>bundle</id>
+                <phase>package</phase>
+                <goals>
+                  <goal>run</goal>
+                </goals>
+                <configuration>
+                  <target xmlns:if="ant:if" xmlns:unless="ant:unless">
+                    <fail unless="bundle.platform" message="No bundle platform known for os.name=${os.name}, os.arch=${os.arch}."/>
+                    <property name="bundle.dir" location="${project.build.directory}/bundle"/>
+                    <property name="bundle.name" value="pinfit-${project.version}-${bundle.platform}"/>
+                    <delete dir="${bundle.dir}"/>
+                    <mkdir dir="${bundle.dir}"/>
+                    <exec executable="${java.home}/bin/jlink" failonerror="true">
+                      <arg value="--add-modules"/>
+                      <arg value="java.base,java.logging"/>
+                      <arg value="--strip-debug"/>
+                      <arg value="--no-header-files"/>
+                      <arg value="--no-man-pages"/>
+                      <arg value="--compress=${jlink.compress}"/>
+                      <arg value="--output"/>
+                      <arg file="${bundle.dir}/runtime"/>
+                    </exec>
+                    <copy file="${project.build.directory}/${project.build.finalName}.jar" tofile="${bundle.dir}/pinfit.jar"/>
+
+                    <copy file="${project.basedir}/scripts/pinfit.cmd" todir="${bundle.dir}" if:set="bundle.windows"/>
+                    <copy file="${project.basedir}/scripts/uninstall.ps1" tofile="${bundle.dir}/Uninstall-Pinfit.ps1" if:set="bundle.windows"/>
+                    <zip destfile="${project.build.directory}/${bundle.name}.zip" basedir="${bundle.dir}" if:set="bundle.windows"/>
+
+                    <copy file="${project.basedir}/scripts/pinfit.sh" tofile="${bundle.dir}/pinfit" unless:set="bundle.windows"/>
+                    <copy file="${project.basedir}/scripts/uninstall.sh" todir="${bundle.dir}" unless:set="bundle.windows"/>
+                    <chmod perm="755" unless:set="bundle.windows">
+                      <fileset dir="${bundle.dir}" includes="pinfit,uninstall.sh,runtime/bin/**,runtime/lib/jspawnhelper,runtime/lib/jexec"/>
+                    </chmod>
+                    <tar destfile="${project.build.directory}/${bundle.name}.tar.gz" compression="gzip" longfile="posix" unless:set="bundle.windows">
+                      <tarfileset dir="${bundle.dir}" filemode="755" includes="pinfit,uninstall.sh,runtime/bin/**,runtime/lib/jspawnhelper,runtime/lib/jexec"/>
+                      <tarfileset dir="${bundle.dir}" excludes="pinfit,uninstall.sh,runtime/bin/**,runtime/lib/jspawnhelper,runtime/lib/jexec"/>
+                    </tar>
+                    <echo message="Bundle: ${bundle.name} (runtime from ${java.home})"/>
+                  </target>
+                </configuration>
+              </execution>
+            </executions>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+
+    <!-- jlink's compression flag changed spelling in JDK 21 ("2" is deprecated there, "zip-6" is new). -->
+    <profile>
+      <id>jlink-compress-jdk17</id>
+      <activation><jdk>[17,21)</jdk></activation>
+      <properties><jlink.compress>2</jlink.compress></properties>
+    </profile>
+    <profile>
+      <id>jlink-compress-jdk21</id>
+      <activation><jdk>[21,)</jdk></activation>
+      <properties><jlink.compress>zip-6</jlink.compress></properties>
+    </profile>
+
+    <!-- Platform names used in bundle file names and by the installers' download logic. -->
+    <profile>
+      <id>platform-windows-x64</id>
+      <activation><os><family>windows</family><arch>amd64</arch></os></activation>
+      <properties><bundle.platform>windows-x64</bundle.platform><bundle.windows>true</bundle.windows></properties>
+    </profile>
+    <profile>
+      <id>platform-linux-x64</id>
+      <activation><os><name>Linux</name><arch>amd64</arch></os></activation>
+      <properties><bundle.platform>linux-x64</bundle.platform></properties>
+    </profile>
+    <profile>
+      <id>platform-linux-aarch64</id>
+      <activation><os><name>Linux</name><arch>aarch64</arch></os></activation>
+      <properties><bundle.platform>linux-aarch64</bundle.platform></properties>
+    </profile>
+    <profile>
+      <id>platform-macos-x64</id>
+      <activation><os><family>mac</family><arch>x86_64</arch></os></activation>
+      <properties><bundle.platform>macos-x64</bundle.platform></properties>
+    </profile>
+    <profile>
+      <id>platform-macos-aarch64</id>
+      <activation><os><family>mac</family><arch>aarch64</arch></os></activation>
+      <properties><bundle.platform>macos-aarch64</bundle.platform></properties>
+    </profile>
+  </profiles>
 </project>

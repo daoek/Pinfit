@@ -1,0 +1,7 @@
+kind: adapter
+name: bus_adapter
+description: Adapts bus to bus_hal
+from: bus
+to: bus_hal
+mappings:
+  - { from: write, to: send }

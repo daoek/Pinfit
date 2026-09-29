@@ -15,22 +15,28 @@ regeneration.
 
 ## Install
 
-Windows: download [`install.ps1`](https://github.com/daoek/Pinfit/raw/main/scripts/install.ps1);
-Linux/macOS: download [`install.sh`](https://github.com/daoek/Pinfit/raw/main/scripts/install.sh).
-Run it with the version you want:
+One line installs the newest release.
+
+Windows (PowerShell):
 
 ```powershell
-.\install.ps1 -Version 0.1.0-beta.4
+irm https://raw.githubusercontent.com/daoek/Pinfit/main/scripts/install.ps1 | iex
 ```
+
+Linux / macOS:
 
 ```console
-./install.sh --version 0.1.0-beta.4
+curl -fsSL https://raw.githubusercontent.com/daoek/Pinfit/main/scripts/install.sh | sh
 ```
 
-It downloads that [release](https://github.com/daoek/Pinfit/releases), verifies the jar against the
-published SHA-256 checksum, and installs it per-user — no admin/`sudo` rights, no Maven or a clone
-of the repository needed **to install it**. Running the installed `pinfit` does need a **Java 17+
-runtime** on `PATH`; both launchers check for it and say so clearly if it's missing. Open a new
+To pin a version instead, pass it on: `... | sh -s -- --version 0.1.0-beta.5` on Linux/macOS, or
+download [`install.ps1`](https://github.com/daoek/Pinfit/raw/main/scripts/install.ps1) and run
+`.\install.ps1 -Version 0.1.0-beta.5` on Windows.
+
+The installer downloads the [release](https://github.com/daoek/Pinfit/releases) for your platform
+(Windows x64, Linux x64/arm64, macOS Intel/Apple silicon), verifies it against the published SHA-256
+checksum, and installs it per-user — no admin/`sudo` rights. **Nothing else is needed: no Java, no
+Maven.** Pinfit ships with its own trimmed Java runtime and only ever uses that one. Open a new
 terminal afterwards:
 
 ```console

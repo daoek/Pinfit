@@ -1,7 +1,7 @@
 # CLI reference
 
-Run `pinfit` from the project directory or any of its descendants. When no native launcher is
-installed, substitute `java -jar path/to/pinfit-1.0-SNAPSHOT.jar` for `pinfit` everywhere below.
+Run `pinfit` from the project directory or any of its descendants. To run the plain release jar on
+your own Java 17+ instead of the installed bundle, substitute `java -jar path/to/pinfit-<version>.jar` for `pinfit` everywhere below.
 
 ```console
 pinfit --help
@@ -20,12 +20,14 @@ Commands:
   fix-prototypes   Add missing prototypes for hand-written functions
   detach           Remove Pinfit tags and generated-file tracking (destructive)
 
-Run 'pinfit help <command>' or 'pinfit <command> --help' for details on a command.
+Run 'pinfit help <command>' or 'pinfit <command> --help' for details on a command,
+and 'pinfit --version' for the installed version.
 ```
 
 `pinfit`, `pinfit help` and `pinfit --help`/`-h` all print the command list above, with no flag detail.
 For a given command, either `pinfit <command> --help`/`-h` or `pinfit help <command>` prints that
-command's full usage and flags — the sections below. Errors print a red `Pinfit error` block, usually
+command's full usage and flags — the sections below. `pinfit --version` (or `-V`) prints the
+installed version, e.g. `Pinfit 0.1.0-beta.5`. Errors print a red `Pinfit error` block, usually
 followed by a cyan hint explaining how to fix the spec.
 
 The same reference is also shipped as a Unix `man` page, [`man/man1/pinfit.1`](https://github.com/daoek/Pinfit/blob/main/man/man1/pinfit.1)
@@ -268,6 +270,7 @@ left fully intact.
 | --- | --- |
 | `0` | Success. |
 | `1` | A `Pinfit error` was printed — an invalid spec, a missing reference, a refused overwrite, an unreadable file — **or** a confirmation prompt was declined (`detach`, `--also-nested`). |
+| `2` | A `Pinfit internal error` was printed: a bug in Pinfit itself, not in your specs. Set `PINFIT_DEBUG=1` and re-run to see the stack trace, and please [report it](https://github.com/daoek/Pinfit/issues). |
 
 A declined confirmation is a non-zero exit deliberately, so a script that pipes `n` into
 `pinfit generate --also-nested` does not report success for a run that generated nothing.

@@ -57,6 +57,10 @@ public final class PinfitCli {
                 return 0;
             }
             String command = args[0];
+            if (command.equals("--version") || command.equals("-V")) {
+                out.println("Pinfit " + version());
+                return 0;
+            }
             if (command.equals("help") || command.equals("--help") || command.equals("-h")) {
                 if (args.length > 1) {
                     printCommandHelp(args[1]);
@@ -81,7 +85,36 @@ public final class PinfitCli {
         } catch (PinfitException exception) {
             printError(exception);
             return 1;
+        } catch (RuntimeException exception) {
+            printInternalError(exception);
+            return 2;
         }
+    }
+
+    /** The version the jar was built as (pom.xml, via the manifest), or a marker for an unpackaged build. */
+    static String version() {
+        String version = PinfitCli.class.getPackage().getImplementationVersion();
+        return version == null ? "(development build)" : version;
+    }
+
+    /**
+     * Anything that isn't a PinfitException is a Pinfit bug, not a problem with the user's specs:
+     * say so plainly instead of dumping a stack trace, and keep the trace one env var away.
+     */
+    private void printInternalError(RuntimeException exception) {
+        err.println();
+        err.println(RED_BOLD + "Pinfit internal error" + RESET);
+        err.println(RED + exception.getClass().getSimpleName()
+                + (exception.getMessage() == null ? "" : ": " + exception.getMessage()) + RESET);
+        err.println();
+        err.println(CYAN_BOLD + "This is a bug in Pinfit, not in your specs." + RESET);
+        err.println(GREEN + "Please report it at https://github.com/daoek/Pinfit/issues with the command you ran."
+                + (System.getenv("PINFIT_DEBUG") == null
+                        ? " Set PINFIT_DEBUG=1 and re-run to include the full stack trace." : "") + RESET);
+        if (System.getenv("PINFIT_DEBUG") != null) {
+            exception.printStackTrace(err);
+        }
+        err.println();
     }
 
     private void printError(PinfitException exception) {
@@ -748,6 +781,7 @@ public final class PinfitCli {
             stream.printf("  %-16s %s%n", command.display(), command.summary());
         }
         stream.println();
-        stream.println("Run 'pinfit help <command>' or 'pinfit <command> --help' for details on a command.");
+        stream.println("Run 'pinfit help <command>' or 'pinfit <command> --help' for details on a command,");
+        stream.println("and 'pinfit --version' for the installed version.");
     }
 }

@@ -2,3 +2,11 @@
 # and can break shell syntax outright (heredocs, case statements) on Linux/macOS, regardless of
 # what core.autocrlf a contributor's machine (this one included) happens to have set.
 *.sh text eol=lf
+
+# Golden fixtures are compared byte for byte (the variant fixture is deliberately CRLF), so git
+# must never rewrite their line endings.
+src/test/resources/golden/** -text
+
+# The Windows launcher is downloaded raw by install.ps1 (straight from the repository blob, not a
+# checkout), so it must be stored with CRLF itself - batch files misparse with LF-only line endings.
+scripts/*.cmd -text

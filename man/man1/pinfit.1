@@ -11,9 +11,13 @@ generates C headers and sources from short YAML specs: interfaces, modules, stat
 observers, command tables, status codes and adapters. Your own code lives in named user regions
 inside the generated files and survives every regeneration.
 .PP
-When no native launcher is installed, substitute
-.B "java \-jar pinfit.jar"
-for
+The installed
+.B pinfit
+runs on its own bundled Java runtime; no system Java is needed. The plain
+.I pinfit\-<version>.jar
+from a release also runs on any Java 17+ as
+.BR "java \-jar pinfit.jar" ,
+substituted for
 .B pinfit
 everywhere below.
 .SH COMMANDS
@@ -153,6 +157,9 @@ Print help. Given after a command
 .RI ( "pinfit <command> \-\-help" )
 it prints that command's usage; given alone it lists all commands.
 .TP
+.BR \-V ", " \-\-version
+Print the installed version.
+.TP
 .BI "help " "[command]"
 Same as
 .BR \-\-help ,
@@ -172,6 +179,13 @@ A
 was printed \- an invalid spec, a missing reference, a refused overwrite, an unreadable file \-
 or a confirmation prompt was declined
 .RI ( detach ", " "\-\-also\-nested" ).
+.TP
+.B 2
+A
+.B "Pinfit internal error"
+was printed \- a bug in Pinfit itself. Set
+.B PINFIT_DEBUG=1
+to include the stack trace.
 .SH FILES
 .TP
 .I pinfit.yaml

@@ -1,0 +1,19 @@
+kind: state-machine
+name: door
+description: Door controller
+includes: [<stdint.h>]
+context:
+  - uint32_t open_count
+initial: CLOSED
+states:
+  - { name: CLOSED, description: Door is closed }
+  - { name: OPEN }
+  - { name: FAULT }
+events:
+  - { name: OPEN_REQUEST, description: Request to open, parameters: [] }
+  - { name: CLOSE_REQUEST }
+  - { name: MOTOR_FAULT, parameters: [uint32_t code] }
+transitions:
+  - { from: CLOSED, event: OPEN_REQUEST, to: OPEN, guard: true }
+  - { from: OPEN, event: CLOSE_REQUEST, to: CLOSED }
+  - { from: OPEN, event: MOTOR_FAULT, to: FAULT }

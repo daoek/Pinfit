@@ -1,7 +1,8 @@
 # MISRA-oriented generated C
 
-Pinfit emits MISRA C:2012-friendly control flow by default. This page explains what that means
-concretely, and — just as importantly — what it does not mean.
+Pinfit uses MISRA C:2012 as a guideline, not as a compliance target: the generated skeleton
+follows most of its rules where that costs nothing, so a MISRA review starts from a clean base. This
+page explains what that means concretely, and — just as importantly — what it does not mean.
 
 ## What the generator does
 

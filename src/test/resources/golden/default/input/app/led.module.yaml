@@ -1,0 +1,7 @@
+kind: module
+name: led
+includes: [<stdint.h>, <stdbool.h>]
+context:
+  - uint8_t pin
+singleton: true
+singletonElse: true

@@ -1,0 +1,4 @@
+kind: module
+name: boot
+includes: [<stdbool.h>]
+singleton: true

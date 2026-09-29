@@ -1,0 +1,7 @@
+kind: status-codes
+name: pinfit_status
+description: Shared status codes
+codes:
+  - { name: OK, value: 0, description: Success }
+  - { name: INVALID_PARAM, value: -1 }
+  - { name: NOT_READY, value: -2 }
