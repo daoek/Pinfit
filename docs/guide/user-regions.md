@@ -28,7 +28,8 @@ tell apart when scanning a file.
 On each `generate`, Pinfit reads the existing output file, takes the text between every
 `usercode+` / `usercode-` pair, renders the structure fresh from the YAML, and pastes each saved
 block back into the region of the same name. The region's *content* is never inspected, parsed or
-reformatted — it comes back byte for byte.
+reformatted — it comes back unchanged, except that line endings follow
+[`format.lineEnding`](project-configuration.md#lineending) like the rest of the file.
 
 This means a region moves with its item. Reorder functions in the YAML, change a parameter type,
 switch `format.indent` from 4 to 2: the surrounding code is re-rendered, your body is not.
@@ -43,17 +44,21 @@ generator page lists its own, but the naming is consistent:
 | `interface.preamble`, `interface.declarations`, `interface.footer` | [Interface](../generators/interface.md) headers |
 | `module.header.preamble`, `module.header.footer` | [Module](../generators/module.md) headers |
 | `module.source.includes`, `module.source.variables`, `module.source.prototypes`, `module.source.footer` | Module sources |
-| `function.<interface>.<function>.body` | A module's implementation of an interface function |
+| `function.<interface>.<function>.body` | A module's or [adapter's](../generators/adapter.md) implementation of an interface function |
 | `function.<name>.body` | A module's own standalone function |
 | `variable.<name>.get`, `variable.<name>.set` | Generated accessors, under `publicVariables: accessors` |
 | `singleton.init`, `singleton.else` | A `singleton: true` module |
 | `state.<STATE>.entry`, `state.<STATE>.exit`, `state.<STATE>.tick` | [State machine](../generators/state-machine.md) states |
-| `transition.<from>.<event>.guard`, `event.<EVENT>.unhandled` | State machine transitions |
+| `transition.<from>.<event>.guard`, `transition.<from>.<event>.action` | State machine transitions |
+| `event.<EVENT>.unhandled` | State machine events no transition handled (builtin engine only) |
 | `command.<NAME>.body`, `command.unknown` | [Command table](../generators/command-table.md) handlers |
 | `switchcase.<enum>.<case>` | A [`@PinfitSwitch`](pinfitswitch.md) case |
+| `<kind>.header.preamble`, `<kind>.header.footer`, `<kind>.source.includes`, `<kind>.source.footer` | File edges of an `observer`, `command-table`, `adapter` or `state-machine` |
+| `state-machine.hooks-header.*`, `state-machine.hooks-source.*` | The same edges in a StateSmith machine's `_hooks` files |
+| `status-codes.preamble`, `status-codes.footer` | [Status codes](../generators/status-codes.md) header edges |
 
-[Observers](../generators/observer.md) and [status codes](../generators/status-codes.md) have no
-user regions at all — their output is entirely mechanical.
+[Observers](../generators/observer.md) and [status codes](../generators/status-codes.md) have only
+those file-edge regions — the rest of their output is entirely mechanical.
 
 ## Where to put things that are not function bodies
 
@@ -133,10 +138,10 @@ When you genuinely want that file replaced, pass
 [`--force`](../reference/cli.md#pinfit-generate) — and check the file into version control first,
 because its content is gone afterwards.
 
-!!! danger "A file using the old `/*@Pinfit(+name)*/` region syntax"
+!!! danger "A file using the old `/*@CGen(+name)*/` region syntax"
 
-    Versions before the `usercode+`/`usercode-` syntax above wrote regions as
-    `/*@Pinfit(+name)*/ ... /*@Pinfit(-name)*/`. The current parser does not recognize that shape as a
+    Versions before the `usercode+`/`usercode-` syntax above, from when Pinfit was still called CGen,
+    wrote regions as `/*@CGen(+name)*/ ... /*@CGen(-name)*/`. The current parser does not recognize that shape as a
     region at all, so `generate` **refuses** a file that still has it, naming the file and line,
     rather than silently discarding what's inside — `--force` does not bypass this refusal either,
     since the file is a recognized Pinfit file, just an outdated one. Fix it by hand: change that
@@ -168,7 +173,7 @@ otherwise only find it by opening that file. `generate` also prints every orphan
 file and line, so a non-interactive run cannot finish without it showing up somewhere:
 
 ```console
-Warning: ra_iic.c:42: orphaned user region 'function.common_iic.write.body' - its YAML item is
+Warning: D:\firmware\drivers\RA\ra_iic.c:42: orphaned user region 'function.common_iic.write.body' - its YAML item is
 gone; move the code where it belongs, then delete the region
 ```
 

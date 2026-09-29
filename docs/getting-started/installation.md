@@ -136,9 +136,11 @@ pinfit --help
 ```title="Expected output"
 Pinfit - YAML-driven C interface and module generator
 
-Usage:
-  pinfit init [directory] [-f|--force]
-  pinfit create interface <name> [directory]
+Usage: pinfit <command> [options]
+
+Commands:
+  init             Create a new pinfit.yaml project
+  create           Scaffold a new interface, module, or other spec
   ...
 ```
 

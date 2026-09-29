@@ -49,8 +49,8 @@ The interface YAML and its generated header live in the same directory.
 | --- | --- | --- |
 | `kind` | yes | `interface` |
 | `name` | yes | Prefix for every generated identifier |
-| `description` | no | File `@brief` |
-| `header` | yes | Generated header file name |
+| `description` | no | File `@brief`. Default `<name> interface` |
+| `header` | no | Generated header file name. Default `<name>_I.h` |
 | `invalidReturn` | see below | Returned when the caller passes a null interface |
 | `uninitializedReturn` | see below | Returned when nothing has been bound yet |
 | `invalidReturns` | no | Per-return-type `invalidReturn` defaults |
@@ -58,7 +58,7 @@ The interface YAML and its generated header live in the same directory.
 | `includes` | no | Verbatim include lines |
 | `enums` | no | `typedef enum` types emitted before the table |
 | `structs` | no | `typedef struct` types emitted before the table |
-| `functions` | yes | The contract itself |
+| `functions` | no | The contract itself |
 
 ### `invalidReturn` and `uninitializedReturn`
 
@@ -133,7 +133,7 @@ compact shorthand as parameters.
 /*@Pinfit(file:interface:common_iic.interface.yaml)*/
 /**
  * @file common_iic_I.h
- * @brief Portable I2C master interface
+ * @brief Portable I2C interface
  */
 
 #ifndef COMMON_IIC_I_H_
@@ -154,6 +154,13 @@ typedef enum
     COMMON_IIC_NOT_INITIALIZED = 2
 } common_iic_status_t;
 
+/*@Pinfit(struct:common_iic_options_t)*/
+/** @brief common_iic_options_t */
+typedef struct
+{
+    uint32_t speed;
+} common_iic_options_t;
+
 /*@Pinfit usercode+ interface.declarations*/
 /*@Pinfit usercode-*/
 
@@ -161,15 +168,17 @@ typedef enum
 typedef struct
 {
     void *context;
-    common_iic_status_t (*write)(void *context, uint32_t slave_address, const uint8_t *data, uint32_t length);
+    common_iic_status_t (*write)(void *context, const uint8_t *data, uint32_t length);
 } common_iic_interface_t;
 
 /*@Pinfit(function:write)*/
 /**
- * @brief Write bytes to a slave
+ * @brief Write bytes
+ * @param data data
+ * @param length length
  * @return common_iic_status_t result.
  */
-static inline common_iic_status_t common_iic_write(const common_iic_interface_t * const interface, uint32_t slave_address, const uint8_t *data, uint32_t length)
+static inline common_iic_status_t common_iic_write(const common_iic_interface_t * const interface, const uint8_t *data, uint32_t length)
 {
     common_iic_status_t pinfit_result = COMMON_IIC_INVALID_PARAM;
 
@@ -177,7 +186,7 @@ static inline common_iic_status_t common_iic_write(const common_iic_interface_t 
     {
         if ((interface->context != NULL) && (interface->write != NULL))
         {
-            pinfit_result = interface->write(interface->context, slave_address, data, length);
+            pinfit_result = interface->write(interface->context, data, length);
         }
         else
         {
@@ -218,7 +227,7 @@ void transfer(common_iic_interface_t *bus)
 {
     const uint8_t payload[2] = { 0x10U, 0x2AU };
 
-    if (common_iic_write(bus, 0x42U, payload, sizeof(payload)) != COMMON_IIC_SUCCESS)
+    if (common_iic_write(bus, payload, sizeof(payload)) != COMMON_IIC_SUCCESS)
     {
         /* handle it */
     }

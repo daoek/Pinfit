@@ -1,8 +1,11 @@
 # Troubleshooting
 
 Errors print a red `Pinfit error` block with the offending file's path, often followed by a cyan hint
-about the spec. Nothing is written when generation fails — a run either completes or changes
-nothing.
+about the spec. Every spec is checked and every file rendered before the first write, so a failed
+run changes no generated file. Two exceptions: an `externalEnums:` link that
+[`@PinfitSwitch`](../guide/pinfitswitch.md#what-gets-remembered) already wrote stays in its
+`.module.yaml`, and a failing `ss.cli` run comes after the Pinfit-owned files of a
+[StateSmith machine](../generators/state-machine.md#the-statesmith-engine) were written.
 
 ## Generation refuses to run
 
@@ -38,6 +41,19 @@ protection for a hand-written file that predates the spec.
 
 Either point the spec at a different `header:` / `source:` name, or — once you are sure the file's
 content is expendable and committed — pass `--force`.
+
+### `<file> was edited outside its usercode regions since Pinfit last generated it`
+
+Someone changed the generated part of the file — by hand or with another tool. Regenerating would
+overwrite that change, so Pinfit refuses. Move the change into a user region or into the YAML spec,
+or pass `--force` to discard it. See
+[User regions](../guide/user-regions.md#files-pinfit-will-not-overwrite-either-an-edit-outside-any-region).
+
+### `found the old user-region marker syntax`
+
+The file still uses the `/*@CGen(+name)*/ ... /*@CGen(-name)*/` regions of a very old version.
+Change each region's two marker lines by hand to `/*@Pinfit usercode+ name*/` and
+`/*@Pinfit usercode-*/`, keeping the code between them. `--force` does not bypass this.
 
 ### `Multiple YAML specifications generate <file>`
 
@@ -84,7 +100,7 @@ record it. Declare the enum in a YAML `enums:` block instead.
 The fallback scan found the typedef but could not parse members out of it — usually a body built
 from macros. Declare the enum in YAML `enums:`.
 
-### `Linked enum file ... cannot be read` / `no longer exists`
+### `Cannot read linked enum file ...` / `Linked enum file ... no longer exists`
 
 An `externalEnums:` entry points at a file that has moved or been deleted. The `file` path is
 relative to the YAML holding the entry. Fix the path, or delete the entry to be asked again.
@@ -94,6 +110,10 @@ relative to the YAML holding the entry. Fix the path, or delete the entry to be 
 A hand-written `case` in a tagged switch does not match any member of the enum. Pinfit fails rather
 than silently dropping your code. Remove or correct that case, then generate again. See
 [`@PinfitSwitch`](../guide/pinfitswitch.md#tagging-a-switch-you-already-wrote).
+
+The same happens when you remove a member from the enum while its case region still holds code
+(`has code in the case for '<member>', which is no longer a member`). Move or delete that code
+first.
 
 ## My code disappeared
 
@@ -134,6 +154,9 @@ Use `pinfit generate -v` to print the project root and scope it actually used.
   unchanged body. Fix the body.
 - **Missing types.** A type used in `context`, `variables` or `parameters` must be reachable: add
   its header to `includes`, or declare the type in `enums` / `structs`.
+- **Missing `<stdbool.h>` or `<stdint.h>`.** Pinfit adds the standard headers its own generated
+  code needs, but not the ones your `context` and `variables` types need — a `bool busy` variable
+  needs `includes: [<stdbool.h>]` in the spec.
 - **Unprefixed standalone functions.** A module's own `functions:` are **not** module-prefixed, so
   two modules both declaring `initialize` collide at link time. Keep those names unique yourself.
 - **`pinfit_result` unused, or an early `return`.** In a non-`void` region, assign to `pinfit_result`

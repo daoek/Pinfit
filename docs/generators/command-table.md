@@ -54,14 +54,14 @@ typedef enum
 
 typedef struct
 {
-    unsigned char reserved;   /* replaced by your own context: fields */
+    unsigned char reserved;
 } uart_cmd_context_t;
 
 void uart_cmd_dispatch(uart_cmd_context_t *context, uart_cmd_command_t command, const uint8_t *payload, uint32_t length);
 ```
 
 Enum members are `<NAME>_CMD_<COMMAND>`. An empty `context:` produces a single `reserved` field so
-the struct stays valid C.
+the struct stays valid C; your own `context:` fields replace it.
 
 ## Handlers
 

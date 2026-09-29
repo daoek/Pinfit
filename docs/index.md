@@ -35,6 +35,10 @@ static common_iic_status_t ra_iic_common_iic_write(void *context, uint32_t slave
 {
     ra_iic_context_t *module = (ra_iic_context_t *)context;
     common_iic_status_t pinfit_result = COMMON_IIC_INVALID_PARAM;
+    (void)module;
+    (void)slave_address;
+    (void)data;
+    (void)length;
 
     /*@Pinfit usercode+ function.common_iic.write.body*/
     /* Your driver code goes here and survives every regeneration. */
@@ -73,7 +77,7 @@ static common_iic_status_t ra_iic_common_iic_write(void *context, uint32_t slave
 
     ---
 
-    Single return per function, null checks before every pointer dereference, explicit
+    Single return per function, null-checked interface dispatch, explicit
     consumption of unused parameters — the generated skeleton is written for safety-critical
     review from the start.
 

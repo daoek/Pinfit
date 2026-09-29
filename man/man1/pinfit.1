@@ -2,7 +2,7 @@
 .SH NAME
 pinfit \- YAML\-driven C interface and module generator for embedded projects
 .SH SYNOPSIS
-.B Pinfit
+.B pinfit
 .I command
 .RI [ options ]
 .SH DESCRIPTION
@@ -14,7 +14,7 @@ inside the generated files and survives every regeneration.
 When no native launcher is installed, substitute
 .B "java \-jar pinfit.jar"
 for
-.B Pinfit
+.B pinfit
 everywhere below.
 .SH COMMANDS
 .TP
@@ -32,7 +32,7 @@ is given.
 .TP
 .BI "create module " "name " "[directory] [\-\-implements " "name[,name...]" ]
 .TP
-.BI "create state\-machine " "name " "[directory]"
+.BI "create state\-machine " "name " "[directory] [\-\-engine " "builtin|statesmith" ]
 .TP
 .BI "create observer " "name " "\-\-interface " "name " "[directory] [\-\-capacity " n ]
 .TP
@@ -49,9 +49,9 @@ writes YAML only; run
 .B "pinfit generate"
 to produce the C.
 .TP
-.BI "gen " "[directory] [\-f|\-\-force] [\-v|\-\-verbose] [\-\-also\-nested]"
+.BI "gen " "[directory] [\-f|\-\-force] [\-v|\-\-verbose] [\-\-also\-nested] [\-\-strict]"
 .TP
-.BI "generate " "[directory] [\-f|\-\-force] [\-v|\-\-verbose] [\-\-also\-nested]"
+.BI "generate " "[directory] [\-f|\-\-force] [\-v|\-\-verbose] [\-\-also\-nested] [\-\-strict]"
 Scan the given directory tree (the current one by default), resolve every spec, and write the
 headers and sources. Idempotent: running it twice produces identical files the second time.
 .B gen
@@ -76,11 +76,13 @@ usercode region, and ask for confirmation before writing anything.
 Permanently remove Pinfit from the project: keeps generated C code and unrelated YAML, removes the
 Pinfit marker lines, then deletes
 .IR pinfit.yaml ,
-every
-.I *.interface.yaml
-and
-.IR *.module.yaml ,
+every Pinfit spec YAML
+.RI ( *.interface.yaml ", " *.module.yaml ", " *.state\-machine.yaml ", " *.status\-codes.yaml ,
+.IR *.observer.yaml ", " *.command\-table.yaml ", " *.adapter.yaml ),
 and the custom documentation YAML the project referenced. Asks for the project name to confirm.
+A StateSmith machine's generated
+.I .plantuml
+is kept, with only its marker stripped.
 .SH OPTIONS
 .TP
 .B \-f ", " \-\-force
@@ -90,7 +92,8 @@ overwrite an existing
 instead of refusing.
 .br
 .B generate :
-overwrite files on disk that aren't Pinfit\-generated instead of refusing.
+overwrite files on disk that aren't Pinfit\-generated, or that were edited outside their usercode
+regions, instead of refusing.
 .TP
 .B \-v ", " \-\-verbose
 .B generate :
@@ -106,6 +109,20 @@ own
 normally left alone), each using its own
 .I pinfit.yaml
 settings. Asks for confirmation after a fast directory count.
+.TP
+.B \-\-strict
+.B generate :
+fail instead of warning when a non\-void function has no invalidReturn/uninitializedReturn anywhere
+and falls back to a zero initializer. Same as
+.B "strict: true"
+in
+.IR pinfit.yaml ,
+for one run.
+.TP
+.BI "\-\-engine " "builtin|statesmith"
+.B "create state\-machine" :
+.B builtin
+(default) or StateSmith\-backed hierarchical states.
 .TP
 .BI "\-\-implements " "name[,name...]"
 .B "create module" :
@@ -161,7 +178,8 @@ or a confirmation prompt was declined
 Project configuration, created by
 .BR "pinfit init" .
 .TP
-.I *.interface.yaml ", " *.module.yaml
+.IR *.interface.yaml ", " *.module.yaml ", " *.state\-machine.yaml ", " *.observer.yaml ,
+.IR *.command\-table.yaml ", " *.status\-codes.yaml ", " *.adapter.yaml
 Specs created by
 .BR "pinfit create" .
 .SH SEE ALSO

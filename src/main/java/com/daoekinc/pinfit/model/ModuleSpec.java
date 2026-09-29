@@ -111,8 +111,9 @@ public record ModuleSpec(
         Values.uniqueNames(functions.stream().map(function -> function.spec().name()).toList(), contextName + ".functions");
 
         boolean singleton = Boolean.parseBoolean(Values.optionalString(yaml, "singleton", "false", contextName));
-        String instanceName = Values.identifier(
-                Values.optionalString(yaml, "instance", name + "_instance", contextName), contextName + ".instance");
+        // null means "not set": the renderer derives <name>_instance, honouring format.functionNaming.
+        String configuredInstance = Values.optionalString(yaml, "instance", null, contextName);
+        String instanceName = configuredInstance == null ? null : Values.identifier(configuredInstance, contextName + ".instance");
         boolean singletonElse = Boolean.parseBoolean(Values.optionalString(yaml, "singletonElse", "false", contextName));
 
         List<ExternalEnumLink> externalEnums = new ArrayList<>();

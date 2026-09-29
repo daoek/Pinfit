@@ -1,7 +1,7 @@
 # CLI reference
 
-Run `Pinfit` from the project directory or any of its descendants. When no native launcher is
-installed, substitute `java -jar path/to/pinfit-1.0-SNAPSHOT.jar` for `Pinfit` everywhere below.
+Run `pinfit` from the project directory or any of its descendants. When no native launcher is
+installed, substitute `java -jar path/to/pinfit-1.0-SNAPSHOT.jar` for `pinfit` everywhere below.
 
 ```console
 pinfit --help
@@ -23,7 +23,7 @@ Commands:
 Run 'pinfit help <command>' or 'pinfit <command> --help' for details on a command.
 ```
 
-`Pinfit`, `pinfit help` and `pinfit --help`/`-h` all print the command list above, with no flag detail.
+`pinfit`, `pinfit help` and `pinfit --help`/`-h` all print the command list above, with no flag detail.
 For a given command, either `pinfit <command> --help`/`-h` or `pinfit help <command>` prints that
 command's full usage and flags — the sections below. Errors print a red `Pinfit error` block, usually
 followed by a cyan hint explaining how to fix the spec.
@@ -117,7 +117,9 @@ are carried across every run — see [User regions](../guide/user-regions.md).
 
 ### `-f`, `--force`
 
-Overwrite files on disk that are **not** Pinfit-generated, instead of refusing.
+Overwrite files on disk that are **not** Pinfit-generated, or that were
+[edited outside their user regions](../guide/user-regions.md#files-pinfit-will-not-overwrite-either-an-edit-outside-any-region),
+instead of refusing.
 
 !!! danger "This destroys hand-written content"
 
@@ -201,14 +203,14 @@ drivers\RA\ra_iic.c - 1 function(s) without a prototype:
 
 --- a/drivers\RA\ra_iic.c
 +++ b/drivers\RA\ra_iic.c
-@@ -8,6 +8,7 @@
- /*@Pinfit usercode+ module.source.variables*/
+@@ -14,6 +14,7 @@
  /*@Pinfit usercode-*/
+
  /*@Pinfit usercode+ module.source.prototypes*/
 +static uint8_t checksum(const uint8_t *data, size_t length);
  /*@Pinfit usercode-*/
 
- /*@Pinfit usercode+ module.source.includes*/
+ /*@Pinfit(variable-definition:transfer_count)*/
 Add these prototypes to the module.source.prototypes usercode region? [y/N]:
 ```
 

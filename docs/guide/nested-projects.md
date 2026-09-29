@@ -16,7 +16,7 @@ firmware/
     deep/other.module.yaml         # (3)!
 ```
 
-1.  Running `Pinfit` anywhere in `firmware/` — except under a nested project — uses **this**
+1.  Running `pinfit` anywhere in `firmware/` — except under a nested project — uses **this**
     configuration.
 2.  The moment the scan sees this file, it stops descending.
 3.  Not scanned, not generated, not deleted by the outer project. Ever.

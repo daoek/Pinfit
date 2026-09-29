@@ -112,7 +112,7 @@ source: ra_iic.c
 
 implements:
   - common_iic
-includes: []
+includes: [<stdbool.h>]
 
 context:
   - void *hardware
@@ -231,6 +231,7 @@ driver.
 #define RA_IIC_H_
 
 #include "../Interface/common_iic_I.h"
+#include <stdbool.h>
 
 /*@Pinfit usercode+ module.header.preamble*/
 /*@Pinfit usercode-*/
@@ -261,6 +262,11 @@ implemented interface gets one `<module>_bind_<interface>` function.
 
 ```c title="drivers/RA/ra_iic.c"
 /*@Pinfit(file:module-source:ra_iic.module.yaml)*/
+/**
+ * @file ra_iic.c
+ * @brief RA-family I2C implementation
+ */
+
 #include "ra_iic.h"
 
 /*@Pinfit usercode+ module.source.includes*/
@@ -273,9 +279,11 @@ implemented interface gets one `<module>_bind_<interface>` function.
 /*@Pinfit usercode-*/
 
 /*@Pinfit(variable-definition:transfer_count)*/
+/** @brief transfer_count */
 uint32_t transfer_count;
 
 /*@Pinfit(private-variable:busy)*/
+/** @brief busy */
 static bool busy;
 
 /*@Pinfit(private-function:ra_iic_common_iic_write)*/

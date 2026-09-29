@@ -67,8 +67,9 @@ static int bus_adapter_bus_write(void *context, const uint8_t *data, uint32_t le
 ```
 
 The call goes through `bus_hal_send()` — the target interface's own generated dispatch wrapper — so
-a null target or an unbound HAL still returns that interface's `uninitializedReturn` rather than
-crashing.
+a missing target never crashes: before `set_target()` the wrapper returns the HAL interface's
+`invalidReturn` (the target pointer is null), and a target that was never bound returns its
+`uninitializedReturn`.
 
 ## Unmapped functions
 

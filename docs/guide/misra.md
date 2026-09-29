@@ -33,11 +33,20 @@ static inline common_iic_status_t common_iic_write(const common_iic_interface_t 
 In a non-`void` user region, **assign to `pinfit_result`** rather than returning early, so the
 function keeps its single return.
 
-### Pointers are checked before use
+### Pointers are checked where they cross an interface
 
-No generated code dereferences a pointer it has not tested. The dispatch wrapper above checks the
-interface, its context and the function pointer before calling through; a bind function checks its
-`interface` argument before writing to it.
+The dispatch wrapper above checks the interface, its context and the function pointer before
+calling through; a bind function checks its `interface` argument before writing to it; a StateSmith
+machine's public functions check `context`. An interface implementation can rely on this: it is
+only reached through a wrapper that already checked the context.
+
+!!! warning "Not every public function checks its `context`"
+
+    Functions that take their own module's context directly do **not** test it for `NULL` before
+    using it: an observer's `_init`, `_subscribe`, `_unsubscribe` and `_publish_*`, a builtin state
+    machine's `_init`, `_tick`, `_go_to_state` and `_on_<EVENT>`, and an adapter's `_set_target`.
+    Passing a null context to one of them is undefined behaviour, the same as for a hand-written C
+    function with that signature. Check it at the call site, or record it for your checker.
 
 ### No silent invalid return values
 
@@ -61,10 +70,13 @@ Stub bodies you have not filled in yet still compile cleanly:
 Set [`format.suppressUnusedWarnings: false`](project-configuration.md#suppressunusedwarnings) if
 your standard forbids those casts.
 
-### Braces and blocks everywhere
+### Braces and blocks
 
-Every `if`, `else`, `case` and loop body that Pinfit generates is braced, including single-statement
-bodies and each `@PinfitSwitch` case, which gets its own `{ ... }` block with an explicit `break;`.
+Every `if`, `else` and loop body that Pinfit generates is braced, including single-statement
+bodies. A `case` that holds a user region gets its own `{ ... }` block with an explicit `break;` —
+every `@PinfitSwitch` case, every state-machine event and tick case, and a command table's `default`.
+The purely mechanical switches — a builtin state machine's `_go_to_state()` and a command table's
+opcode dispatch — use unbraced `case X: call(); break;` bodies.
 
 ## What it does not mean
 

@@ -62,6 +62,52 @@ class PatternGeneratorsTest {
     }
 
     @Test
+    void singletonAccessorFollowsCamelCaseUnlessRenamed() throws Exception {
+        CliFixture cli = new CliFixture(temporaryDirectory);
+        assertEquals(0, cli.run("init"));
+        Path config = temporaryDirectory.resolve("pinfit.yaml");
+        Files.writeString(config, Files.readString(config).replace("  indent: 4", "  indent: 4\n  functionNaming: camelCase"));
+        Files.writeString(temporaryDirectory.resolve("logger.module.yaml"), """
+                kind: module
+                name: logger
+                context:
+                  - uint32_t line_count
+                singleton: true
+                """);
+        Files.writeString(temporaryDirectory.resolve("clock.module.yaml"), """
+                kind: module
+                name: clock
+                context:
+                  - uint32_t ticks
+                singleton: true
+                instance: clock_handle
+                """);
+        assertEquals(0, cli.run("generate"), cli.errors());
+
+        assertTrue(Files.readString(temporaryDirectory.resolve("logger.h")).contains("logger_context_t *loggerInstance(void);"));
+        assertTrue(Files.readString(temporaryDirectory.resolve("clock.h")).contains("clock_context_t *clock_handle(void);"));
+    }
+
+    @Test
+    void functionWithoutDescriptionFallsBackToItsNameInDoxygen() throws Exception {
+        CliFixture cli = new CliFixture(temporaryDirectory);
+        assertEquals(0, cli.run("init"));
+        Files.writeString(temporaryDirectory.resolve("door.state-machine.yaml"), """
+                kind: state-machine
+                name: door
+                initial: CLOSED
+                states: [{ name: CLOSED }]
+                events: [{ name: OPEN_REQUEST }]
+                transitions: []
+                """);
+        assertEquals(0, cli.run("generate"), cli.errors());
+
+        String header = Files.readString(temporaryDirectory.resolve("door.h"));
+        assertTrue(header.contains(" * @brief door_on_OPEN_REQUEST\n"), header);
+        assertFalse(header.contains(" * @brief \n"), header);
+    }
+
+    @Test
     void generatesModuleEnumsUsableByContextFields() throws Exception {
         CliFixture cli = new CliFixture(temporaryDirectory);
         assertEquals(0, cli.run("init"));

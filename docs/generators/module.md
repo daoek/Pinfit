@@ -47,7 +47,7 @@ variables:
 | `invalidReturns` / `uninitializedReturns` | The same defaults, keyed by return type. |
 | `singleton` | `true` generates a lazy-init instance accessor. See [below](#singleton). |
 | `singletonElse` | `true` adds an `else` branch to that accessor. |
-| `instance` | Renames the generated singleton accessor (default `<name>_instance`). |
+| `instance` | Renames the generated singleton accessor. Default `<name>_instance`, spelled per [`format.functionNaming`](../guide/project-configuration.md#functionnaming). |
 | `externalEnums` | Links to enums declared in your own headers, written automatically by [`@PinfitSwitch`](../guide/pinfitswitch.md#what-gets-remembered). |
 
 ## Implementing an interface
@@ -187,8 +187,9 @@ bool initialize(void)
 
 Points worth knowing:
 
-- **The name is not module-prefixed.** The C identifier is exactly `name`, so keep it unique
-  yourself across the module's own functions and its implemented interfaces.
+- **The name is not module-prefixed.** The C identifier is `name` as written (converted to
+  camelCase under `functionNaming: camelCase`), so keep it unique yourself across the module's own
+  functions and its implemented interfaces.
 - **No implicit context.** Unlike an interface function, no `void *context` first parameter is
   added. Take one as an explicit parameter if the function needs it.
 - **`invalidReturn` resolves the same way as in an interface**: the function's own key, then the
@@ -225,13 +226,11 @@ led_context_t *led_instance(void)
     {
         led_singleton_initialized = true;
         /*@Pinfit usercode+ singleton.init*/
-        /* One-time setup for the singleton instance. */
         /*@Pinfit usercode-*/
     }
     else
     {
         /*@Pinfit usercode+ singleton.else*/
-        /* Runs on every call after the first. */
         /*@Pinfit usercode-*/
     }
     return &led_singleton_context;
@@ -240,6 +239,10 @@ led_context_t *led_instance(void)
 
 The context lives in static storage; `singleton.init` runs on the first call only. Add
 `singletonElse: true` for the `else` branch — useful for a refresh, a liveness check, or a counter.
+
+A singleton with no `context` fields and no `implements` has no state to hand out, so the accessor
+becomes a plain run-once function instead: `void led_instance(void)`, with the same
+`singleton.init` / `singleton.else` regions and no `led_context_t`.
 
 !!! note "Not thread-safe by itself"
 

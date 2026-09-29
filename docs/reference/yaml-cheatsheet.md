@@ -40,6 +40,11 @@ format:
   publicVariables: extern        # extern | accessors
   suppressUnusedWarnings: true   # emit (void)param; in stubs
   functionNaming: snake_case     # snake_case | camelCase
+
+# stateSmith:                    # only for engine: statesmith machines
+#   command: ss.cli
+#   version: 0.22.2
+strict: false                    # true: fail instead of warn on a zero-initializer fallback
 ```
 
 ---
@@ -50,7 +55,7 @@ format:
 kind: interface
 name: common_iic
 description: Portable I2C interface
-header: common_iic_I.h
+header: common_iic_I.h                         # optional, default <name>_I.h
 invalidReturn: COMMON_IIC_INVALID_PARAM        # fallback for every non-void function
 uninitializedReturn: COMMON_IIC_NOT_INITIALIZED
 invalidReturns:                                # per-return-type defaults, beat the scalar above
@@ -140,6 +145,7 @@ singleton: false
 
 ```yaml
 kind: state-machine
+# engine: statesmith           # builtin (default) | statesmith - nested states, see the page
 name: door
 description: Door state machine
 header: door.h

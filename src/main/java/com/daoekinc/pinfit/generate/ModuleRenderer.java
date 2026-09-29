@@ -32,7 +32,7 @@ final class ModuleRenderer {
         appendContextStruct(out, project, module, interfaces);
         appendBindFunctionDeclarations(out, project, module, interfaces);
         appendFunctionDeclarations(out, project, module, docs);
-        appendSingletonDeclaration(out, module, interfaces);
+        appendSingletonDeclaration(out, project, module, interfaces);
         appendHeaderBottom(out, user, guard);
         return out.toString();
     }
@@ -157,16 +157,20 @@ final class ModuleRenderer {
         }
     }
 
-    private static void appendSingletonDeclaration(StringBuilder out, ModuleSpec module, List<InterfaceSpec> interfaces) {
+    private static void appendSingletonDeclaration(StringBuilder out, ProjectConfig project, ModuleSpec module, List<InterfaceSpec> interfaces) {
         if (!module.singleton()) {
             return;
         }
-        out.append(PinfitTag.generatedItem("function", module.instanceName())).append('\n');
+        out.append(PinfitTag.generatedItem("function", instanceName(project, module))).append('\n');
         if (isRunOnceSingleton(module, interfaces)) {
-            out.append("void ").append(module.instanceName()).append("(void);\n\n");
+            out.append("void ").append(instanceName(project, module)).append("(void);\n\n");
         } else {
-            out.append(module.name()).append("_context_t *").append(module.instanceName()).append("(void);\n\n");
+            out.append(module.name()).append("_context_t *").append(instanceName(project, module)).append("(void);\n\n");
         }
+    }
+
+    private static String instanceName(ProjectConfig project, ModuleSpec module) {
+        return module.instanceName() != null ? module.instanceName() : functionName(project, module.name(), "instance");
     }
 
     // A singleton with no context fields and no bound interfaces has nothing to hand out a
@@ -356,10 +360,10 @@ final class ModuleRenderer {
         if (!module.singleton()) {
             return;
         }
-        out.append(PinfitTag.generatedItem("function", module.instanceName())).append('\n');
+        out.append(PinfitTag.generatedItem("function", instanceName(project, module))).append('\n');
         if (isRunOnceSingleton(module, interfaces)) {
             out.append("static bool ").append(module.name()).append("_singleton_initialized = false;\n\n");
-            out.append("void ").append(module.instanceName()).append("(void)\n{\n")
+            out.append("void ").append(instanceName(project, module)).append("(void)\n{\n")
                     .append(indent(project, 1)).append("if (!").append(module.name()).append("_singleton_initialized)\n")
                     .append(indent(project, 1)).append("{\n")
                     .append(indent(project, 2)).append(module.name()).append("_singleton_initialized = true;\n");
@@ -371,7 +375,7 @@ final class ModuleRenderer {
         }
         out.append("static ").append(module.name()).append("_context_t ").append(module.name()).append("_singleton_context;\n");
         out.append("static bool ").append(module.name()).append("_singleton_initialized = false;\n\n");
-        out.append(module.name()).append("_context_t *").append(module.instanceName()).append("(void)\n{\n")
+        out.append(module.name()).append("_context_t *").append(instanceName(project, module)).append("(void)\n{\n")
                 .append(indent(project, 1)).append("if (!").append(module.name()).append("_singleton_initialized)\n")
                 .append(indent(project, 1)).append("{\n")
                 .append(indent(project, 2)).append(module.name()).append("_singleton_initialized = true;\n");

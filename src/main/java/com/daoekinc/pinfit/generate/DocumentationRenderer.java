@@ -58,7 +58,7 @@ final class DocumentationRenderer {
         if (style.equals("custom")) {
             return custom("function", Map.of("name", name, "brief", brief, "return", returnType, "params", parameterSummary));
         }
-        StringBuilder result = new StringBuilder("/**\n * @brief ").append(brief).append('\n');
+        StringBuilder result = new StringBuilder("/**\n * @brief ").append(brief.isBlank() ? name : brief).append('\n');
         for (InterfaceSpec.Parameter parameter : parameters) {
             result.append(" * @param ").append(parameter.name()).append(' ')
                     .append(parameter.description().isBlank() ? parameter.name() : parameter.description()).append('\n');

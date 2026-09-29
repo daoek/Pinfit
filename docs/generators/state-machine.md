@@ -229,7 +229,7 @@ install and no extra generated files.
 
 ```
 door.state-machine.yaml   you author this - the single source of truth
-door.h  door.c            Pinfit-owned public API (same shape as the builtin engine's, minus go_to_state)
+door.h  door.c            Pinfit-owned public API (the builtin engine's shape, with get_state instead of go_to_state)
 door_hooks.h  door_hooks.c Pinfit-owned - every line of your code lives here, in usercode regions
 door_sm/                  entirely StateSmith's - never hand-edited
   door_sm.plantuml          Pinfit-generated input (kept by `detach`, as documentation)
@@ -318,8 +318,10 @@ This maps to StateSmith's `do` event. `tick` is reserved: declaring a real event
 
 ### Generated API
 
-Same shape as the builtin engine's, so callers don't need to know which engine generated a given
-machine:
+Nearly the same shape as the builtin engine's, so most callers don't need to know which engine
+generated a given machine. The differences: no `door_go_to_state()` (see below), and a
+`door_get_state()` the builtin engine does not have, since the state lives inside StateSmith's
+`door_sm` rather than in a plain `state` field:
 
 ```c title="door.h (excerpt)"
 typedef enum
@@ -363,6 +365,8 @@ void door_on_MOTOR_FAULT(door_context_t *context, uint32_t code)
 ```c title="door_hooks.c"
 void door_hook_transition_OPERATING_MOTOR_FAULT_action(door_context_t *context)
 {
+    (void)context;
+
     /*@Pinfit usercode+ transition.OPERATING.MOTOR_FAULT.action*/
     log_fault_code(context->event_args.MOTOR_FAULT.code);
     /*@Pinfit usercode-*/
@@ -382,6 +386,10 @@ for `guard`/`action` - all in `door_hooks.h/.c`, all non-`static` (StateSmith's 
 | `state.<STATE>.tick` | On every `do` dispatch while the state is active |
 | `transition.<from>.<event>.guard` | Before the transition, to set `pinfit_guard` |
 | `transition.<from>.<event>.action` | Between the exit hook and the state assignment |
+| `state-machine.hooks-header.preamble` / `.footer` | — (`door_hooks.h` edges) |
+| `state-machine.hooks-source.includes` / `.footer` | — (`door_hooks.c` edges) |
+
+There is no `event.<EVENT>.unhandled` region with this engine.
 
 **Region names are identical to the builtin engine's.** Switching an existing state machine from
 `engine: builtin` to `engine: statesmith` (same state names) keeps every user region: Pinfit carries

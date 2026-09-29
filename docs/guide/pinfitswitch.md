@@ -87,8 +87,9 @@ Use this enum? [y/N]:
 !!! info "The fallback scan is deliberately simple"
 
     It matches a single `typedef enum { ... } name;` and splits members on commas — it is not a C
-    preprocessor. Two files defining the same enum name differently, or a body that builds values
-    from macros, are not handled. Declare the enum in a YAML `enums:` block if you hit that.
+    preprocessor. Two files defining the same enum name with different members make generation
+    fail, naming both files; a body that builds its members from macros is not understood. Declare
+    the enum in a YAML `enums:` block if you hit either.
 
 ## What gets remembered
 

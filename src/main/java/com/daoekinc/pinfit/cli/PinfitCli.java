@@ -440,7 +440,8 @@ public final class PinfitCli {
     }
 
     private PinfitGenerator.WarningListener warningListener() {
-        return message -> out.println(YELLOW_BOLD + "Warning: " + RESET + message);
+        // "\r" + erase-line first: a warning can arrive mid-run, while the progress bar owns the line.
+        return message -> out.println("\r\u001B[K" + YELLOW_BOLD + "Warning: " + RESET + message);
     }
 
     private PinfitGenerator.ProgressListener progressListener(ProjectConfig project, boolean verbose) {
@@ -661,7 +662,8 @@ public final class PinfitCli {
                             produces identical files the second time.
 
                             -f, --force
-                              Overwrite files on disk that aren't Pinfit-generated instead of refusing.
+                              Overwrite files on disk that aren't Pinfit-generated, or that were edited
+                              outside their usercode regions, instead of refusing.
 
                             -v, --verbose
                               Print the project root, scope, and for every output file which spec

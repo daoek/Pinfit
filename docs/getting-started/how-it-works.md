@@ -38,8 +38,9 @@ flowchart LR
    between every `usercode+` / `usercode-` pair and keeps it, keyed by region name.
 5. **Render and merge.** The structure is rendered fresh from the spec, and each region's saved
    text is pasted back into the region with the same name.
-6. **Write.** A file is only written when Pinfit's own marker is on its first line. Anything else is
-   refused rather than overwritten.
+6. **Write.** An existing file is only overwritten when it carries Pinfit's generated-file marker
+   and nothing outside its user regions changed since the last run. Anything else is refused
+   rather than overwritten, unless you pass `--force`.
 
 ## The two kinds of marker
 

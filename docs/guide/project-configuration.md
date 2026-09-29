@@ -38,7 +38,7 @@ stops at any subdirectory that has a `pinfit.yaml` of its own
 | Key | Values | Meaning |
 | --- | --- | --- |
 | `style` | `doxygen` (default), `none`, `custom` | Comment style on generated files, functions, types and variables. |
-| `file` | path | Only with `style: custom`. Points at the YAML holding your templates. |
+| `file` | path | Required with `style: custom`. The YAML holding your templates, relative to `pinfit.yaml` and inside the project. |
 
 ### Custom documentation templates
 
@@ -63,7 +63,7 @@ template is applied by a separate tool.
 
 ### `indent`
 
-Number of spaces per level in generated C. Default `4`.
+Number of spaces per level in generated C, from `2` to `8`. Default `4`.
 
 ### `lineEnding`
 
@@ -101,9 +101,9 @@ Decides how a module's non-`private` variables are exposed, project-wide.
     ```c title="ra_iic.c"
     uint32_t get_transfer_count(void)
     {
-    /*@Pinfit usercode+ variable.transfer_count.get*/
+        /*@Pinfit usercode+ variable.transfer_count.get*/
         return transfer_count;
-    /*@Pinfit usercode-*/
+        /*@Pinfit usercode-*/
     }
     ```
 
@@ -146,6 +146,9 @@ you have not filled in yet.
 | `snake_case` | `ra_iic_bind_common_iic`, `door_go_to_state`, `get_transfer_count` |
 | `camelCase` | `raIicBindCommonIic`, `doorGoToState`, `getTransferCount` |
 
+It also covers a module's standalone `functions:` and its default singleton accessor (`led_instance`
+becomes `ledInstance`); an explicit `instance:` name is used exactly as written.
+
 This is a project-wide switch, so a project stays internally consistent. Changing it renames every
 generated function on the next `generate`; call sites in your own user regions are **not** rewritten,
 so update those in the same commit.
@@ -158,7 +161,7 @@ state machine; `generate` never invokes or requires `ss.cli` otherwise.
 | Key | Default | Meaning |
 | --- | --- | --- |
 | `command` | `ss.cli` | Executable name or path. Resolved on PATH; a bare name also tries `<name>.exe`, since that's how StateSmith's own installer names it on Windows. |
-| `version` | none, required if used | Exact version `ss.cli --version` must report. `generate` fails with install/version instructions on a missing tool or a mismatch. |
+| `version` | none, required if used | Version `ss.cli --version` must report. It is matched as a substring, so `0.22.2` accepts `StateSmith.Cli 0.22.2+<build hash>`. `generate` fails with install/version instructions on a missing tool or a mismatch. |
 
 ## `strict`
 
