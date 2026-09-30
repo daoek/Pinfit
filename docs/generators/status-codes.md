@@ -56,7 +56,7 @@ set (`driver_status`, say) generates `DRIVER_STATUS_SUCCEEDED` and friends witho
 
 ## Using it
 
-```c
+```c title="sensor.c"
 #include "pinfit_status.h"
 
 static pinfit_status_t configure_sensor(sensor_t *sensor)
@@ -86,7 +86,7 @@ void caller(void)
     something Pinfit emits into a generated function body. In a project that enforces single exit,
     use `PINFIT_STATUS_FAILED` with an explicit `pinfit_result` assignment instead:
 
-    ```c
+    ```c title="sensor.c (excerpt)"
     pinfit_status_t pinfit_result = sensor_reset(sensor);
 
     if (PINFIT_STATUS_SUCCEEDED(pinfit_result))

@@ -57,7 +57,7 @@ same parameters.
 
 ### Subscribe and unsubscribe
 
-```c
+```c title="button_events.c (excerpt)"
 bool button_events_subscribe(button_events_context_t *context, const button_listener_interface_t *subscriber)
 {
     bool pinfit_result = false;
@@ -80,7 +80,7 @@ bool button_events_subscribe(button_events_context_t *context, const button_list
 
 ### Publish
 
-```c
+```c title="button_events.c (excerpt)"
 void button_events_publish_pressed(button_events_context_t *context, uint8_t button_id)
 {
     uint32_t index;

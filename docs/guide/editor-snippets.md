@@ -52,14 +52,14 @@ one step — useful when you are working on Pinfit itself rather than with it.
 
 - **Local includes need single quotes.** YAML would otherwise eat the double quotes:
 
-  ```yaml
+  ```yaml title="Any spec file (excerpt)"
   includes: ['"vendor_i2c.h"', <stdint.h>]
   ```
 
 - **Compact form first.** Struct fields, function and event `parameters`, and `context` entries all
   accept `"type name"` shorthand. Switch to the map form only when you need a `description`:
 
-  ```yaml
+  ```yaml title="Any spec file (excerpt)"
   context:
     - void *hardware                                    # compact
     - { type: uint32_t, name: ticks, description: Uptime }  # needs a description

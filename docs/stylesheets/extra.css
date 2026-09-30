@@ -45,3 +45,88 @@
 .md-typeset pre > code {
   white-space: pre;
 }
+
+/* Pinfit design-system colours. The teal itself (#009485) stays exactly as Material
+   ships it; these adjust the pairs that missed 4.5:1 for text or 3:1 for borders. */
+
+/* Text and icons on the teal header: near-black teal (5.0:1) instead of white (3.8:1). */
+[data-md-color-primary="teal"] {
+  --md-primary-bg-color: #001512;
+  --md-primary-bg-color--light: #001512;
+}
+
+/* Light (default) scheme. */
+[data-md-color-scheme="default"][data-md-color-primary="teal"] {
+  --md-typeset-a-color: #007a6c;
+}
+
+[data-md-color-scheme="default"][data-md-color-accent="teal"] {
+  --md-accent-fg-color: #008573;
+}
+
+[data-md-color-scheme="default"] .md-typeset .admonition.info,
+[data-md-color-scheme="default"] .md-typeset details.info {
+  border-color: #009bb3;
+}
+
+[data-md-color-scheme="default"] .md-typeset .info > .admonition-title::before,
+[data-md-color-scheme="default"] .md-typeset .info > summary::before {
+  background-color: #009bb3;
+}
+
+[data-md-color-scheme="default"] .md-typeset .info > summary::after {
+  color: #009bb3;
+}
+
+[data-md-color-scheme="default"] .md-typeset .admonition.tip,
+[data-md-color-scheme="default"] .md-typeset details.tip {
+  border-color: #009f89;
+}
+
+[data-md-color-scheme="default"] .md-typeset .tip > .admonition-title::before,
+[data-md-color-scheme="default"] .md-typeset .tip > summary::before {
+  background-color: #009f89;
+}
+
+[data-md-color-scheme="default"] .md-typeset .tip > summary::after {
+  color: #009f89;
+}
+
+[data-md-color-scheme="default"] .md-typeset .admonition.warning,
+[data-md-color-scheme="default"] .md-typeset details.warning {
+  border-color: #d07600;
+}
+
+[data-md-color-scheme="default"] .md-typeset .warning > .admonition-title::before,
+[data-md-color-scheme="default"] .md-typeset .warning > summary::before {
+  background-color: #d07600;
+}
+
+[data-md-color-scheme="default"] .md-typeset .warning > summary::after {
+  color: #d07600;
+}
+
+/* Dark (slate) scheme: links, accent and callouts already pass with the theme's
+   values; only the number and constant code colours needed a nudge to 4.5:1. */
+[data-md-color-scheme="slate"] {
+  --md-code-hl-number-color: #e66e60;
+  --md-code-hl-constant-color: #9484e2;
+}
+
+[data-md-color-scheme="slate"][data-md-color-primary="teal"] {
+  --md-typeset-a-color: #00ccb8;
+}
+
+[data-md-color-scheme="slate"][data-md-color-accent="teal"] {
+  --md-accent-fg-color: #00bda4;
+}
+
+/* Disabled and placeholder text (ink-faint): the theme's lighter foreground reads below
+   4.5:1, so raise it. Body, secondary and code text already match the design tokens. */
+[data-md-color-scheme="default"] {
+  --md-default-fg-color--lighter: #0000008c;
+}
+
+[data-md-color-scheme="slate"] {
+  --md-default-fg-color--lighter: hsla(var(--md-hue), 15%, 90%, 0.58);
+}

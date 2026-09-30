@@ -8,7 +8,7 @@ cases in sync instead.
 
 Write the comment directly above your own `switch`, naming the enum type:
 
-```c
+```c title="drivers/flash.c (excerpt)"
 /*@Pinfit usercode+ function.dispatch_opcode.body*/
 /*@PinfitSwitch flash_opcodes_t*/
 switch (opcode)
@@ -21,7 +21,7 @@ Run `pinfit generate`. Pinfit resolves `flash_opcodes_t` (see [Resolving the enu
 below) and rewrites the switch with one `case` per member plus a `default`, each carrying its own
 nested user region:
 
-```c
+```c title="drivers/flash.c (excerpt)"
 /*@PinfitSwitch flash_opcodes_t*/
 switch (opcode)
 {

@@ -8,7 +8,7 @@ behind for good.
 
 Edit **only** inside a named user region:
 
-```c
+```c title="ra_iic.c (excerpt)"
 /*@Pinfit usercode+ function.common_iic.write.body*/
 /* Your code is retained here, exactly as written. */
 /*@Pinfit usercode-*/
@@ -65,7 +65,7 @@ those file-edge regions — the rest of their output is entirely mechanical.
 A generated module source has four regions specifically for the things that do not belong in any
 one function:
 
-```c
+```c title="ra_iic.c (excerpt)"
 #include "ra_iic.h"
 
 /*@Pinfit usercode+ module.source.includes*/
@@ -94,7 +94,7 @@ Helper *definitions* go in `module.source.footer` at the bottom of the file.
 Generated non-`void` bodies are wrapped in a single-return shape, for
 [MISRA](misra.md) reasons:
 
-```c
+```c title="ra_iic.c (excerpt)"
 static common_iic_status_t ra_iic_common_iic_write(void *context, uint32_t length)
 {
     common_iic_status_t pinfit_result = COMMON_IIC_INVALID_PARAM;
@@ -127,7 +127,7 @@ the references for you.)
 
 Every generated file starts with a marker line naming the spec that produced it:
 
-```c
+```c title="ra_iic.c (excerpt)"
 /*@Pinfit(file:module-source:ra_iic.module.yaml)*/
 ```
 
@@ -152,7 +152,7 @@ because its content is gone afterwards.
 
 Every generated file's second line is a hash of everything in it **outside** its usercode regions:
 
-```c
+```c title="ra_iic.c (excerpt)"
 /*@Pinfit(file:module-source:ra_iic.module.yaml)*/
 /*@Pinfit(skeleton-hash:afa5049c3118ea5c)*/
 ```

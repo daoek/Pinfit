@@ -46,7 +46,7 @@ flowchart LR
 
 Generated files carry two visually distinct marker styles, and the difference matters:
 
-```c
+```c title="drivers/RA/ra_iic.c (excerpt)"
 /*@Pinfit(private-function:ra_iic_common_iic_write)*/   /* (1)! */
 static common_iic_status_t ra_iic_common_iic_write(void *context, uint32_t length)
 {

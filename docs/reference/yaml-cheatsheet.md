@@ -8,7 +8,7 @@ in each heading for the explanation.
 Struct fields, function and event `parameters`, and `context` entries accept a compact string or a
 full map:
 
-```yaml
+```yaml title="Any spec file (excerpt)"
 context:
   - void *hardware                                          # compact "type name"
   - uint8_t buffer[16]                                      # array declarator is kept verbatim
@@ -17,7 +17,7 @@ context:
 
 Includes are copied verbatim. Single-quote a local include so YAML keeps the double quotes:
 
-```yaml
+```yaml title="Any spec file (excerpt)"
 includes: [<stdint.h>, '"vendor_i2c.h"']
 ```
 
@@ -25,7 +25,7 @@ includes: [<stdint.h>, '"vendor_i2c.h"']
 
 ## [`pinfit.yaml`](../guide/project-configuration.md)
 
-```yaml
+```yaml title="pinfit.yaml"
 schema: 1
 name: firmware
 version: 0.1.0
@@ -51,7 +51,7 @@ strict: false                    # true: fail instead of warn on a zero-initiali
 
 ## [`*.interface.yaml`](../generators/interface.md)
 
-```yaml
+```yaml title="common_iic.interface.yaml"
 kind: interface
 name: common_iic
 description: Portable I2C interface
@@ -93,7 +93,7 @@ functions:
 
 ## [`*.module.yaml`](../generators/module.md)
 
-```yaml
+```yaml title="ra_iic.module.yaml"
 kind: module
 name: ra_iic
 description: RA I2C implementation
@@ -143,7 +143,7 @@ singleton: false
 
 ## [`*.state-machine.yaml`](../generators/state-machine.md)
 
-```yaml
+```yaml title="door.state-machine.yaml"
 kind: state-machine
 # engine: statesmith           # builtin (default) | statesmith - nested states, see the page
 name: door
@@ -176,7 +176,7 @@ Each `(from, event)` pair must be unique.
 
 ## [`*.observer.yaml`](../generators/observer.md)
 
-```yaml
+```yaml title="button_events.observer.yaml"
 kind: observer
 name: button_events
 description: Button event fan-out
@@ -190,7 +190,7 @@ context: []
 
 ## [`*.command-table.yaml`](../generators/command-table.md)
 
-```yaml
+```yaml title="uart_cmd.command-table.yaml"
 kind: command-table
 name: uart_cmd
 description: UART command table
@@ -209,7 +209,7 @@ rejected.
 
 ## [`*.status-codes.yaml`](../generators/status-codes.md)
 
-```yaml
+```yaml title="pinfit_status.status-codes.yaml"
 kind: status-codes
 name: pinfit_status
 description: Shared status codes
@@ -225,7 +225,7 @@ codes:
 
 ## [`*.adapter.yaml`](../generators/adapter.md)
 
-```yaml
+```yaml title="bus_adapter.adapter.yaml"
 kind: adapter
 name: bus_adapter
 description: Adapts bus to bus_hal

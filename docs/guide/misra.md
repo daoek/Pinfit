@@ -10,7 +10,7 @@ page explains what that means concretely, and — just as importantly — what i
 
 Generated functions compute into `pinfit_result` and return once, at the end:
 
-```c
+```c title="drivers/Interface/common_iic_I.h (excerpt)"
 static inline common_iic_status_t common_iic_write(const common_iic_interface_t * const interface, uint32_t length)
 {
     common_iic_status_t pinfit_result = COMMON_IIC_INVALID_PARAM;
@@ -63,7 +63,7 @@ reports success from a failed guard. Name a real sentinel for those.
 
 Stub bodies you have not filled in yet still compile cleanly:
 
-```c
+```c title="ra_iic.c (excerpt)"
     (void)module;
     (void)slave_address;
 ```
@@ -95,7 +95,7 @@ opcode dispatch — use unbraced `case X: call(); break;` bodies.
 The generic interface pattern converts the `void *context` of the function-pointer table to the
 concrete module context type:
 
-```c
+```c title="ra_iic.c (excerpt)"
 static common_iic_status_t ra_iic_common_iic_write(void *context, uint32_t length)
 {
     ra_iic_context_t *module = (ra_iic_context_t *)context;   /* conversion from void* */

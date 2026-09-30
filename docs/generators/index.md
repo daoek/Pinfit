@@ -90,7 +90,7 @@ These apply to every kind.
 
 ### Common top-level keys
 
-```yaml
+```yaml title="ra_iic.module.yaml (excerpt)"
 kind: module          # selects the generator
 name: ra_iic          # C identifier prefix for everything generated
 description: ...      # becomes the file's @brief
@@ -107,7 +107,7 @@ quotes so YAML keeps the double quotes.
 Struct fields, function and event `parameters`, and `context` entries all accept a plain string
 instead of a map:
 
-```yaml
+```yaml title="Any spec file (excerpt)"
 context:
   - void *hardware
   - uint32_t timeout_ms
@@ -115,7 +115,7 @@ context:
 
 Use the map form when you need a `description`:
 
-```yaml
+```yaml title="Any spec file (excerpt)"
 context:
   - { type: void *, name: hardware, description: Vendor handle }
 ```

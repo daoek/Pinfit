@@ -74,7 +74,7 @@ resolves each of them in this order:
 A single scalar default only fits one family of return types: `-1` does not compile for a struct
 and means nothing for an enum. Key the defaults by return type when a file mixes them:
 
-```yaml
+```yaml title="flash.interface.yaml (excerpt)"
 invalidReturn: -1                        # still the fallback for int-like returns
 invalidReturns:
   flash_command_t: FLASH_COMMAND_NONE
@@ -85,7 +85,7 @@ uninitializedReturns:
 
 Both can also be overridden per function:
 
-```yaml
+```yaml title="flash.interface.yaml (excerpt)"
 functions:
   - name: probe
     return: bool
@@ -108,7 +108,7 @@ visible where it is used: declare the enum in `enums`, or pull its header in thr
 
 ### `functions`
 
-```yaml
+```yaml title="drivers/Interface/common_iic.interface.yaml (excerpt)"
 functions:
   - name: write
     return: common_iic_status_t
@@ -220,7 +220,7 @@ What you get per interface:
 
 ## Using it
 
-```c
+```c title="main.c"
 #include "common_iic_I.h"
 
 void transfer(common_iic_interface_t *bus)

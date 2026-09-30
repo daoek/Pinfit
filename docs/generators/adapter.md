@@ -76,7 +76,7 @@ a missing target never crashes: before `set_target()` the wrapper returns the HA
 Any `from` function left out of `mappings`, or rejected for a signature mismatch, falls back to a
 plain stub body — exactly like an unmapped module function:
 
-```c
+```c title="bus_adapter.c (excerpt)"
 /*@Pinfit(private-function:bus_adapter_bus_reset)*/
 static int bus_adapter_bus_reset(void *context)
 {
@@ -98,7 +98,7 @@ enum onto another, or emulating a call the HAL does not offer.
     If the signatures do not line up, you get the stub instead of the call-through — write the
     conversion in the region and call the target yourself:
 
-    ```c
+    ```c title="bus_adapter.c (excerpt)"
     /*@Pinfit usercode+ function.bus.reset.body*/
     pinfit_result = (bus_hal_power_cycle(adapter->target, 0U) == 0) ? 0 : -1;
     /*@Pinfit usercode-*/

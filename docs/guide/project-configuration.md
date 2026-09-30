@@ -79,7 +79,7 @@ Decides how a module's non-`private` variables are exposed, project-wide.
     Each `public` variable gets a plain `extern` declaration in the header and a definition in the
     source.
 
-    ```yaml
+    ```yaml title="ra_iic.module.yaml (excerpt)"
     variables:
       - uint32_t transfer_count public
     ```
@@ -124,7 +124,7 @@ See [Module](../generators/module.md#variables) for the variable syntax itself.
 Default `true`. Generated stub bodies begin with `(void)parameter;` lines so that an untouched
 stub compiles warning-free under `-Wunused-parameter`:
 
-```c
+```c title="ra_iic.c (excerpt)"
 static common_iic_status_t ra_iic_common_iic_write(void *context, uint32_t length)
 {
     ra_iic_context_t *module = (ra_iic_context_t *)context;

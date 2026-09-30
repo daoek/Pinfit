@@ -32,7 +32,7 @@ Give **every** command an explicit `opcode`, or omit it on **all** of them to au
 Mixing the two is rejected — a table where some opcodes are pinned to the protocol and others drift
 with list order is a wire-compatibility bug waiting to happen.
 
-```yaml
+```yaml title="uart_cmd.command-table.yaml (excerpt)"
 commands:          # auto-numbered: PING = 0, RESET = 1
   - { name: PING }
   - { name: RESET }

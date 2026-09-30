@@ -82,7 +82,7 @@ event, taking the context plus whatever `parameters` you declared.
 
 Each state gets a pair of generated `static` hook functions, each with its own user region:
 
-```c
+```c title="door.c (excerpt)"
 /*@Pinfit usercode+ state.OPEN.entry*/
 /*@Pinfit usercode-*/
 
@@ -134,7 +134,7 @@ void door_on_OPEN_REQUEST(door_context_t *context)
 - **`guard`** — with `guard: true`, `pinfit_guard` starts as `true` and you may overwrite it in
   `transition.<from>.<event>.guard`:
 
-  ```c
+  ```c title="door.c (excerpt)"
   /*@Pinfit usercode+ transition.CLOSED.OPEN_REQUEST.guard*/
   pinfit_guard = (context->open_count < MAX_CYCLES);
   /*@Pinfit usercode-*/
@@ -149,7 +149,7 @@ void door_on_OPEN_REQUEST(door_context_t *context)
 
 ## `_tick()` — the main-loop hook
 
-```c
+```c title="door.h (excerpt)"
 void door_tick(door_context_t *context);
 ```
 
@@ -157,7 +157,7 @@ Call `door_tick()` on every iteration of your main loop. It switches on the curr
 per-state region — `state.<STATE>.tick` — where you write whatever runs continuously while in that
 state: polling, timers, sensor reads, and conditional moves elsewhere, in plain C:
 
-```c
+```c title="door.c (excerpt)"
 /*@Pinfit usercode+ state.RUNNING.tick*/
 if (getMotorSpeed() > 100.0f)
 {
@@ -168,7 +168,7 @@ if (getMotorSpeed() > 100.0f)
 
 ## `_go_to_state()` — the transition primitive
 
-```c
+```c title="door.h (excerpt)"
 void door_go_to_state(door_context_t *context, door_state_t state);
 ```
 
@@ -309,7 +309,7 @@ There is no `go_to_state()` with this engine (see below), so a conditional move 
 reaction to a declared event - a polled condition checked every main-loop tick - is written as an
 ordinary transition whose `event` is the reserved word `tick`, almost always paired with a guard:
 
-```yaml
+```yaml title="door.state-machine.yaml (excerpt)"
 - { from: OPEN, event: tick, to: CLOSING, guard: true }
 ```
 

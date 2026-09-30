@@ -91,7 +91,7 @@ The interface header is included from the module header with a relative path Pin
 Variables default to `private` — `static` storage, source only. The compact form is just
 `type name`:
 
-```yaml
+```yaml title="drivers/RA/ra_iic.module.yaml (excerpt)"
 variables:
   - bool busy                          # private
   - uint32_t transfer_count public     # exposed
@@ -163,7 +163,7 @@ counterpart function, which is how you express a read-only counter or a write-on
 
 A module can declare functions of its own, unrelated to any interface:
 
-```yaml
+```yaml title="led.module.yaml (excerpt)"
 functions:
   - name: initialize
     return: bool
@@ -205,7 +205,7 @@ Points worth knowing:
 Set `singleton: true` when a module has exactly one instance and you would rather not thread a
 context through every call site:
 
-```yaml
+```yaml title="led.module.yaml (excerpt)"
 singleton: true
 singletonElse: true   # optional
 # instance: led_handle  # optional: rename the accessor
